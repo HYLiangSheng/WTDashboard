@@ -1,0 +1,9 @@
+# WTDashboard 依赖
+# pip install -r requirements.txt
+
+# 运行时
+PyQt6==6.11.0
+
+# 构建（可选，仅打包时需要）
+pyinstaller==6.21.0
+pillow==12.3.0
