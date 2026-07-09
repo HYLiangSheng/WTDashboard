@@ -33,12 +33,6 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### Enable WT Remote Access
-
-In War Thunder, go to **Options → Main parameters → Air Battle settings** (or Ground/Naval) and set:
-
-- *Allow remote access* → **Yes**
-- *Port* → **8111** (default)
 
 ## Project Structure
 
