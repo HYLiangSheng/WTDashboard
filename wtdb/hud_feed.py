@@ -17,7 +17,7 @@ class HudFeed(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
-        title = QLabel(_("战况消息"))
+        title = QLabel(_("hud.title"))
         title.setStyleSheet(
             "color: #7ec8e3; font-weight: bold; font-size: 10px; padding: 2px 4px;")
         layout.addWidget(title)
@@ -40,7 +40,7 @@ class HudFeed(QWidget):
 
     def _retranslate(self):
         """语言切换时刷新标题。"""
-        self._title_label.setText(_("战况消息"))
+        self._title_label.setText(_("hud.title"))
 
     def update_state(self, state: GameState):
         hud = state.hudmsg_raw

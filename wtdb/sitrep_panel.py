@@ -15,38 +15,38 @@ from .i18n import _
 
 # 类型分组（按显示顺序）
 TYPE_GROUPS = [
-    ("Fighter",     "战斗机",   "空"),
-    ("Assault",     "攻击机",   "空"),
-    ("Bomber",      "轰炸机",   "空"),
-    ("LightTank",   "轻型坦克", "陆"),
-    ("MediumTank",  "中型坦克", "陆"),
-    ("HeavyTank",   "重型坦克", "陆"),
-    ("TankDestroyer","坦歼",    "陆"),
-    ("Tracked",     "履带车辆", "陆"),
-    ("Wheeled",     "轮式车辆", "陆"),
-    ("SPAA",        "自行防空", "陆"),
-    ("Airdefence",  "防空",     "陆"),
-    ("SAM",         "防空导弹", "陆"),
-    ("MLRS",        "火箭炮",   "陆"),
-    ("TBMLauncher", "战术导弹", "陆"),
-    ("Radar",       "雷达",     "陆"),
-    ("Destroyer",   "驱逐舰",   "海"),
-    ("MissileDestroyer","导弹驱逐","海"),
-    ("LightCruiser","轻巡洋舰", "海"),
-    ("MissileLightCruiser","导弹轻巡","海"),
-    ("HeavyCruiser","重巡洋舰", "海"),
-    ("MissileHeavyCruiser","导弹重巡","海"),
-    ("BattleShip",  "战列舰",   "海"),
-    ("MissileBattleship","导弹战列","海"),
-    ("Frigate",     "护卫舰",   "海"),
-    ("MissileFrigate","导弹护卫","海"),
-    ("Corvette",    "护卫艇",   "海"),
-    ("MissileCorvette","导弹护卫艇","海"),
-    ("Boat",        "小艇",     "海"),
-    ("MissileBoat", "导弹艇",   "海"),
-    ("AircraftCarrier","航母",  "海"),
-    ("Submarine",   "潜艇",     "海"),
-    ("Ship",        "舰船",     "海"),
+    ("Fighter",     "vehicle.fighter",   "空"),
+    ("Assault",     "vehicle.attacker",   "空"),
+    ("Bomber",      "vehicle.bomber",   "空"),
+    ("LightTank",   "vehicle.light_tank", "陆"),
+    ("MediumTank",  "vehicle.med_tank", "陆"),
+    ("HeavyTank",   "vehicle.heavy_tank", "陆"),
+    ("TankDestroyer","vehicle.td",    "陆"),
+    ("Tracked",     "vehicle.tracked", "陆"),
+    ("Wheeled",     "vehicle.wheeled", "陆"),
+    ("SPAA",        "vehicle.spaa", "陆"),
+    ("Airdefence",  "vehicle.air_defense",     "陆"),
+    ("SAM",         "vehicle.sam", "陆"),
+    ("MLRS",        "vehicle.mlrs",   "陆"),
+    ("TBMLauncher", "vehicle.tbm", "陆"),
+    ("Radar",       "vehicle.radar",     "陆"),
+    ("Destroyer",   "vehicle.destroyer",   "海"),
+    ("MissileDestroyer","vehicle.missile_destroyer","海"),
+    ("LightCruiser","vehicle.light_cruiser", "海"),
+    ("MissileLightCruiser","vehicle.missile_light_cruiser","海"),
+    ("HeavyCruiser","vehicle.heavy_cruiser", "海"),
+    ("MissileHeavyCruiser","vehicle.missile_heavy_cruiser","海"),
+    ("BattleShip",  "vehicle.battleship",   "海"),
+    ("MissileBattleship","vehicle.missile_battleship","海"),
+    ("Frigate",     "vehicle.frigate",   "海"),
+    ("MissileFrigate","vehicle.missile_frigate","海"),
+    ("Corvette",    "vehicle.corvette",   "海"),
+    ("MissileCorvette","vehicle.missile_corvette","海"),
+    ("Boat",        "vehicle.boat",     "海"),
+    ("MissileBoat", "vehicle.missile_boat",   "海"),
+    ("AircraftCarrier","vehicle.carrier",  "海"),
+    ("Submarine",   "vehicle.submarine",     "海"),
+    ("Ship",        "vehicle.ship",     "海"),
 ]
 
 ABBR = {
@@ -86,11 +86,11 @@ class SitrepPanel(QWidget):
 
         # 标题行 + 展开/收起按钮
         header = QHBoxLayout()
-        title = QLabel(_("战场态势"))
-        title.setStyleSheet("color: #7ec8e3; font-weight: bold; font-size: 12px;")
-        header.addWidget(title)
+        self._title_label = QLabel(_("sitrep.title"))
+        self._title_label.setStyleSheet("color: #7ec8e3; font-weight: bold; font-size: 12px;")
+        header.addWidget(self._title_label)
         header.addStretch()
-        self._expand_btn = QPushButton(_("展开"))
+        self._expand_btn = QPushButton(_("sitrep.expand"))
         self._expand_btn.setMinimumWidth(36)
         self._expand_btn.setFixedHeight(20)
         self._expand_btn.setStyleSheet(
@@ -102,23 +102,23 @@ class SitrepPanel(QWidget):
         layout.addLayout(header)
 
         # 友军表
-        friendly_label = QLabel(_("友军"))
-        friendly_label.setStyleSheet("color: #185AFF; font-weight: bold; font-size: 10px; padding: 2px 4px;")
-        layout.addWidget(friendly_label)
+        self._friendly_label = QLabel(_("filter.friendly"))
+        self._friendly_label.setStyleSheet("color: #185AFF; font-weight: bold; font-size: 10px; padding: 2px 4px;")
+        layout.addWidget(self._friendly_label)
         self._friendly_tree = self._create_tree()
         layout.addWidget(self._friendly_tree)
 
         # 敌军表
-        enemy_label = QLabel(_("敌军"))
-        enemy_label.setStyleSheet("color: #fa3200; font-weight: bold; font-size: 10px; padding: 2px 4px;")
-        layout.addWidget(enemy_label)
+        self._enemy_label = QLabel(_("filter.enemy"))
+        self._enemy_label.setStyleSheet("color: #fa3200; font-weight: bold; font-size: 10px; padding: 2px 4px;")
+        layout.addWidget(self._enemy_label)
         self._enemy_tree = self._create_tree()
         layout.addWidget(self._enemy_tree)
 
     def _create_tree(self) -> QTreeWidget:
         tree = QTreeWidget()
         tree.setColumnCount(3)
-        tree.setHeaderLabels([_("分组/单位"), _("速度"), _("状态")])
+        tree.setHeaderLabels([_("sitrep.col.group"), _("sitrep.col.speed"), _("sitrep.col.status")])
         tree.setAlternatingRowColors(True)
         tree.setIndentation(10)
         tree.itemExpanded.connect(lambda item: self._on_item_toggle(item, True))
@@ -156,7 +156,7 @@ class SitrepPanel(QWidget):
 
     def _toggle_expand_all(self):
         self._expanded = not self._expanded
-        self._expand_btn.setText(_("收起") if self._expanded else _("展开"))
+        self._expand_btn.setText(_("sitrep.collapse") if self._expanded else _("sitrep.expand"))
         for k in self._expand_state:
             self._expand_state[k] = self._expanded
         for tree in (self._enemy_tree, self._friendly_tree):
@@ -165,10 +165,13 @@ class SitrepPanel(QWidget):
 
     def _retranslate(self):
         """语言切换时刷新所有 UI 文字。"""
-        self._expand_btn.setText(_("收起") if self._expanded else _("展开"))
+        self._title_label.setText(_("sitrep.title"))
+        self._friendly_label.setText(_("filter.friendly"))
+        self._enemy_label.setText(_("filter.enemy"))
+        self._expand_btn.setText(_("sitrep.collapse") if self._expanded else _("sitrep.expand"))
         self._expand_btn.setMinimumWidth(self._expand_btn.sizeHint().width() + 8)
-        self._friendly_tree.setHeaderLabels([_("分组/单位"), _("速度"), _("状态")])
-        self._enemy_tree.setHeaderLabels([_("分组/单位"), _("速度"), _("状态")])
+        self._friendly_tree.setHeaderLabels([_("sitrep.col.group"), _("sitrep.col.speed"), _("sitrep.col.status")])
+        self._enemy_tree.setHeaderLabels([_("sitrep.col.group"), _("sitrep.col.speed"), _("sitrep.col.status")])
         # 强制刷新树内容（重新翻译 TYPE_GROUPS 标签）
         self.refresh()
 
@@ -218,7 +221,7 @@ class SitrepPanel(QWidget):
         lost_n = len(group) - active_n
         parts = [f"[{emoji}] {_(label)}", str(len(group))]
         if lost_n > 0:
-            parts.append(f"({lost_n}{_('消失')})")
+            parts.append(f"({lost_n}{_('sitrep.lost')})")
         parent = QTreeWidgetItem([f"{'  '.join(parts)}"])
         parent.setData(0, Qt.ItemDataRole.UserRole, icon_key or label)
         parent.setFlags(Qt.ItemFlag.ItemIsEnabled)

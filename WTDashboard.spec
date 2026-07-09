@@ -4,11 +4,11 @@ a = Analysis(
     ['main.py'],
     pathex=['.'],
     binaries=[],
-    datas=[],
+    datas=[('game_icons', 'game_icons'), ('locales', 'locales')],
     hiddenimports=[
         'wtdb', 'wtdb.api_client', 'wtdb.dashboard_window',
         'wtdb.map_widget', 'wtdb.sitrep_panel', 'wtdb.hud_feed',
-        'wtdb.unit_tracker', 'wtdb.styles', 'wtdb.config',
+        'wtdb.unit_tracker', 'wtdb.styles', 'wtdb.config', 'wtdb.i18n',
         'PyQt6.QtCore', 'PyQt6.QtGui', 'PyQt6.QtWidgets',
         'urllib.request', 'urllib.error', 'urllib.parse',
     ],

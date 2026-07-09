@@ -24,7 +24,9 @@ A real-time tactical display for War Thunder, built with PyQt6. Reads battlefiel
 
 ### Download
 
-Grab the latest **`WTDashboard_Setup.exe`** from [Releases](../../releases) — it installs everything into `%LOCALAPPDATA%\WTDashboard` with Start Menu and Desktop shortcuts.
+Grab the latest **`WTDashboard_Setup_v1_0_1.exe`** from [Releases](../../releases) — it installs everything into `%LOCALAPPDATA%\WTDashboard` with Start Menu and Desktop shortcuts.
+
+> **Note:** Only **Windows** installers are provided. macOS / Linux users can run from source, or build an installer using the instructions below.
 
 ### Run from Source
 
@@ -32,6 +34,13 @@ Grab the latest **`WTDashboard_Setup.exe`** from [Releases](../../releases) — 
 pip install -r requirements.txt
 python main.py
 ```
+
+### Enable WT Remote Access
+
+In War Thunder, go to **Options → Main parameters → Air Battle settings** (or Ground/Naval) and set:
+
+- *Allow remote access* → **Yes**
+- *Port* → **8111** (default)
 
 
 ## Project Structure
@@ -51,25 +60,49 @@ WTDashboard/
 │   └── config.py             # JSON config save/load
 ├── game_icons/          # Vehicle type icons (replaceable PNGs)
 ├── locales/             # Language packs (JSON)
-├── setup.nsi            # NSIS installer script
+├── build_macos.sh      # macOS .dmg build script
+├── build_linux.sh      # Linux AppImage build script
+├── setup.nsi            # Windows NSIS installer script
 ├── WTDashboard.spec     # PyInstaller spec
-└── icon.png / icon.ico  # App icon
+├── icon.png             # App icon (Linux/macOS)
+└── icon.ico             # App icon (Windows)
 ```
 
-## Build
+## Installer Build
 
-Requires [NSIS](https://nsis.sourceforge.io/) and Python 3.11+ with PyQt6.
+### Windows
+
+Requires [NSIS](https://nsis.sourceforge.io/) and Python 3.11+.
 
 ```bash
-# 1. Build the EXE
-pip install pyinstaller
+pip install -r requirements.txt
 pyinstaller --noconfirm WTDashboard.spec
-
-# 2. Build the installer
 makensis setup.nsi
 ```
 
-The output is `dist/WTDashboard_Setup.exe`.
+Output: `dist/WTDashboard_Setup_v1_0_1.exe`
+
+### macOS
+
+Requires Python 3.11+ (macOS only, cannot cross-compile).
+
+```bash
+pip install -r requirements.txt
+bash build_macos.sh
+```
+
+Output: `dist/WTDashboard_Setup_v1_0_1.dmg`
+
+### Linux
+
+Requires Python 3.11+ and [appimagetool](https://github.com/AppImage/AppImageKit).
+
+```bash
+pip install -r requirements.txt
+bash build_linux.sh
+```
+
+Output: `dist/WTDashboard_Setup_v1_0_1.AppImage`
 
 ## License
 

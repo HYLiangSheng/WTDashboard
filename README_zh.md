@@ -24,7 +24,9 @@
 
 ### 下载安装包
 
-从 [Releases](../../releases) 下载最新的 **`WTDashboard_Setup.exe`**，安装到 `%LOCALAPPDATA%\WTDashboard`，自动创建开始菜单和桌面快捷方式。
+从 [Releases](../../releases) 下载最新的 **`WTDashboard_Setup_v1_0_1.exe`**，安装到 `%LOCALAPPDATA%\WTDashboard`，自动创建开始菜单和桌面快捷方式。
+
+> **提示：** 目前仅提供 Windows 安装包，不提供 macOS / Linux 版本。macOS / Linux 用户可直接运行源码，或按照下方流程自行构建安装包。
 
 ### 从源码运行
 
@@ -50,25 +52,49 @@ WTDashboard/
 │   └── config.py             # JSON 配置读写
 ├── game_icons/          # 载具类型图标（可替换 PNG）
 ├── locales/             # 语言包（JSON）
-├── setup.nsi            # NSIS 安装脚本
+├── build_macos.sh      # macOS .dmg 构建脚本
+├── build_linux.sh      # Linux AppImage 构建脚本
+├── setup.nsi            # Windows NSIS 安装脚本
 ├── WTDashboard.spec     # PyInstaller 配置
-└── icon.png / icon.ico  # 应用图标
+├── icon.png             # 应用图标 (Linux/macOS)
+└── icon.ico             # 应用图标 (Windows)
 ```
 
-## 构建
+## 安装包构建
 
-需要 [NSIS](https://nsis.sourceforge.io/) 和 Python 3.11+ 及 PyQt6。
+### Windows
+
+需要 [NSIS](https://nsis.sourceforge.io/) 和 Python 3.11+。
 
 ```bash
-# 1. 构建 EXE
-pip install pyinstaller
+pip install -r requirements.txt
 pyinstaller --noconfirm WTDashboard.spec
-
-# 2. 构建安装包
 makensis setup.nsi
 ```
 
-产物为 `dist/WTDashboard_Setup.exe`。
+产物: `dist/WTDashboard_Setup_v1_0_1.exe`
+
+### macOS
+
+需要 Python 3.11+（仅限 macOS，无法交叉编译）。
+
+```bash
+pip install -r requirements.txt
+bash build_macos.sh
+```
+
+产物: `dist/WTDashboard_Setup_v1_0_1.dmg`
+
+### Linux
+
+需要 Python 3.11+ 和 [appimagetool](https://github.com/AppImage/AppImageKit)。
+
+```bash
+pip install -r requirements.txt
+bash build_linux.sh
+```
+
+产物: `dist/WTDashboard_Setup_v1_0_1.AppImage`
 
 ## 许可证
 

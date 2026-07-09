@@ -313,7 +313,7 @@ class FetchWorker(QObject):
         if not state.valid:
             self._map_img_fetched = False  # 断连时重置，下次重连重新下载地图
             if not self._error_emitted:
-                self.connection_error.emit(_("等待游戏连接..."))
+                self.connection_error.emit("status.waiting")
                 self._error_emitted = True
             return state
         if self._error_emitted:
@@ -351,7 +351,7 @@ class FetchWorker(QObject):
         try:
             req = Request(
                 f"{self.BASE_URL}{path}",
-                headers={"User-Agent": "WTDashboard/1.0"},
+                headers={"User-Agent": "WTDashboard/1.0.1"},
             )
             with urlopen(req, timeout=self.TIMEOUT) as resp:
                 return json.loads(resp.read().decode())
@@ -362,7 +362,7 @@ class FetchWorker(QObject):
         try:
             req = Request(
                 f"{self.BASE_URL}{path}",
-                headers={"User-Agent": "WTDashboard/1.0"},
+                headers={"User-Agent": "WTDashboard/1.0.1"},
             )
             with urlopen(req, timeout=3.0) as resp:
                 return resp.read()

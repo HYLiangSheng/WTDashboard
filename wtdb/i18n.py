@@ -111,9 +111,7 @@ def get_locale() -> str:
 
 
 def _(text: str) -> str:
-    """翻译字符串。zh-CN 时返回原文，其他语言查表。"""
-    if _current_locale == "zh-CN":
-        return text
+    """翻译字符串。从当前语言的翻译表中查找。"""
     return _translations.get(_current_locale, {}).get(text, text)
 
 

@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QScrollArea, QToolButton, QRadioButton, QButtonGroup,
 )
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 from .api_client import FetchWorker, GameState
 from .map_widget import MapWidget
@@ -35,7 +35,7 @@ class ConnectDialog(QDialog):
     def __init__(self, current_host: str = "localhost", current_port: int = 8111,
                  parent=None):
         super().__init__(parent)
-        self.setWindowTitle(_("连接设置"))
+        self.setWindowTitle(_("dialog.connect.title"))
         self.setMinimumWidth(420)
         # 继承全局字体，不硬编码字号
         qss = re.sub(r'font-size:\s*\d+px;?', '', DARK_THEME_QSS)
@@ -47,16 +47,15 @@ class ConnectDialog(QDialog):
 
         # 说明文字
         hint = QLabel(
-            _("War Thunder 须在设置中开启「允许远程访问」，默认端口 8111。<br>"
-              "本软件可运行在与游戏同一台电脑（本地），或局域网内另一台电脑（远程）。")
+            _("dialog.connect.hint")
         )
         hint.setWordWrap(True)
         hint.setStyleSheet("color: #aaaacc; margin-bottom: 4px;")
         root.addWidget(hint)
 
         # 本地 / 远程 单选
-        self._local_radio = QRadioButton(_("🖥 本地（本机运行 WT）"))
-        self._remote_radio = QRadioButton(_("🌐 远程（局域网其他电脑）"))
+        self._local_radio = QRadioButton(_("dialog.connect.local"))
+        self._remote_radio = QRadioButton(_("dialog.connect.remote"))
         self._local_radio.setChecked(current_host in ("localhost", "127.0.0.1"))
         self._remote_radio.setChecked(current_host not in ("localhost", "127.0.0.1"))
         group = QButtonGroup(self)
@@ -75,17 +74,17 @@ class ConnectDialog(QDialog):
         host_layout = QFormLayout()
         host_layout.setSpacing(8)
         self._host_edit = QLineEdit(current_host)
-        self._host_edit.setPlaceholderText(_("例如: 192.168.1.100 或 game-pc"))
+        self._host_edit.setPlaceholderText(_("dialog.connect.placeholder"))
         self._host_edit.setMinimumHeight(28)
-        host_layout.addRow(_("主机地址:"), self._host_edit)
+        host_layout.addRow(_("dialog.connect.host"), self._host_edit)
 
         # 端口
         self._port_spin = QSpinBox()
         self._port_spin.setRange(1024, 65535)
         self._port_spin.setValue(current_port)
         self._port_spin.setMinimumHeight(28)
-        self._port_spin.setToolTip(_("War Thunder 远程访问端口，默认 8111"))
-        host_layout.addRow(_("端口:"), self._port_spin)
+        self._port_spin.setToolTip(_("dialog.connect.port_tooltip"))
+        host_layout.addRow(_("dialog.connect.port"), self._port_spin)
         root.addLayout(host_layout)
 
         self._on_mode_changed(self._local_radio.isChecked())
@@ -210,7 +209,7 @@ class DashboardWindow(QMainWindow):
         root_layout.addWidget(splitter, 1)
 
         # ---------- 状态栏 ----------
-        self._status_label = QLabel(_("正在连接 {}:{} ...").format(self._current_host, self._current_port))
+        self._status_label = QLabel(_("status.connecting").format(self._current_host, self._current_port))
         self._status_label.setStyleSheet("color: #7ec8e3; padding: 2px 8px;")
         self.statusBar().addWidget(self._status_label)
 
@@ -222,7 +221,7 @@ class DashboardWindow(QMainWindow):
         )
         self._addr_label.setCursor(Qt.CursorShape.PointingHandCursor)
         self._addr_label.mousePressEvent = lambda e: self._show_connect_dialog()
-        self._addr_label.setToolTip(_("点击更改连接地址"))
+        self._addr_label.setToolTip(_("tooltip.addr"))
         self.statusBar().addPermanentWidget(self._addr_label)
 
         self._fps_label = QLabel("")
@@ -364,9 +363,9 @@ class DashboardWindow(QMainWindow):
 
         layout.addSpacing(6)
 
-        btn("连接", "连接设置 (Ctrl+N)", self._show_connect_dialog)
-        btn("置顶", "始终置顶", lambda: self._toggle_always_on_top(True))
-        btn("全屏", "全屏 (F11)", self._toggle_fullscreen)
+        btn("sidebar.connect", "tooltip.connect", self._show_connect_dialog)
+        btn("sidebar.pin", "tooltip.pin", lambda: self._toggle_always_on_top(True))
+        btn("sidebar.fullscreen", "tooltip.fullscreen", self._toggle_fullscreen)
 
         zoom_row = QWidget()
         zoom_row.setStyleSheet("background: transparent;")
@@ -388,13 +387,13 @@ class DashboardWindow(QMainWindow):
             zl.addWidget(zb)
             self._sidebar_buttons.append((zb, label_key, tip_key))
 
-        _zbtn("A-", "缩小字号", self._zoom_out)
-        _zbtn("A+", "放大字号", self._zoom_in)
+        _zbtn("sidebar.zoom_out", "tooltip.zoom_out", self._zoom_out)
+        _zbtn("sidebar.zoom_in", "tooltip.zoom_in", self._zoom_in)
         layout.addWidget(zoom_row)
 
         layout.addStretch()
-        btn(_("关于"), _("关于"), self._show_about)
-        btn(_("退出"), _("退出 (Ctrl+Q)"), self.close)
+        btn("sidebar.about", "sidebar.about", self._show_about)
+        btn("sidebar.exit", "tooltip.exit", self.close)
 
         return sidebar
 
@@ -413,15 +412,15 @@ class DashboardWindow(QMainWindow):
         self._master_label_keys: dict[int, str] = {}   # button id → Chinese label key
 
         types = [
-            ("[空] 战斗机", "Fighter"), ("[空] 攻击机", "Assault"), ("[空] 轰炸机", "Bomber"),
-            ("[空] 武直", "AttackHelicopter"), ("[空] 直升机", "UtilityHelicopter"),
-            ("[陆] 轻坦", "LightTank"), ("[陆] 中坦", "MediumTank"), ("[陆] 重坦", "HeavyTank"),
-            ("[陆] 坦歼", "TankDestroyer"), ("[陆] 防空", "SPAA"), ("[陆] 防空导弹", "SAM"),
-            ("[陆] 地面设施", "__facility__"),
-            ("[海] 驱逐", "Destroyer"), ("[海] 护卫", "Frigate"),
-            ("[海] 轻巡", "LightCruiser"), ("[海] 重巡", "HeavyCruiser"),
-            ("[海] 战巡", "Battlecruiser"), ("[海] 战列", "BattleShip"),
-            ("[海] 潜艇", "Submarine"), ("[海] 舰船", "Ship"), ("[海] 小艇", "Boat"),
+            ("filter.air.fighter", "Fighter"), ("filter.air.attacker", "Assault"), ("filter.air.bomber", "Bomber"),
+            ("filter.air.atk_heli", "AttackHelicopter"), ("filter.air.heli", "UtilityHelicopter"),
+            ("filter.ground.light_tank", "LightTank"), ("filter.ground.med_tank", "MediumTank"), ("filter.ground.heavy_tank", "HeavyTank"),
+            ("filter.ground.td", "TankDestroyer"), ("filter.ground.spaa", "SPAA"), ("filter.ground.sam", "SAM"),
+            ("filter.ground.facility", "__facility__"),
+            ("filter.sea.destroyer", "Destroyer"), ("filter.sea.frigate", "Frigate"),
+            ("filter.sea.light_cruiser", "LightCruiser"), ("filter.sea.heavy_cruiser", "HeavyCruiser"),
+            ("filter.sea.battlecruiser", "Battlecruiser"), ("filter.sea.battleship", "BattleShip"),
+            ("filter.sea.submarine", "Submarine"), ("filter.sea.ship", "Ship"), ("filter.sea.boat", "Boat"),
         ]
         air_keys = ["Fighter", "Assault", "Bomber", "AttackHelicopter", "UtilityHelicopter"]
         land_keys = ["LightTank", "MediumTank", "HeavyTank", "TankDestroyer", "SPAA", "SAM",
@@ -449,8 +448,8 @@ class DashboardWindow(QMainWindow):
             # 主开关行
             mr = QHBoxLayout()
             mr.setSpacing(1)
-            for label_key, keys in [("全", air_keys+land_keys+sea_keys),
-                                    ("空", air_keys), ("陆", land_keys), ("海", sea_keys)]:
+            for label_key, keys in [("filter.master_all", air_keys+land_keys+sea_keys),
+                                    ("filter.master_air", air_keys), ("filter.master_ground", land_keys), ("filter.master_sea", sea_keys)]:
                 b = QPushButton(_(label_key))
                 b.setFixedSize(26, 18)
                 b.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -489,8 +488,8 @@ class DashboardWindow(QMainWindow):
             lay.addStretch()
             return side
 
-        columns.addWidget(build_side("friendly", "友军", "#185AFF"))
-        columns.addWidget(build_side("enemy", "敌军", "#fa3200"))
+        columns.addWidget(build_side("friendly", "filter.friendly", "#185AFF"))
+        columns.addWidget(build_side("enemy", "filter.enemy", "#fa3200"))
 
         # 存储友军/敌军标签引用用于 retranslate
         # (这些在 build_side 内部创建，通过 findChildren 查找)
@@ -559,8 +558,9 @@ class DashboardWindow(QMainWindow):
         counters_f: dict[str, int] = {}
         for u in self._tracker.active_friendlies:
             f = faction_of(u)
-            if (f, u.icon) in hidden or (
-                u.icon not in abbr and (f, "__facility__") in hidden):
+            check_f = "friendly" if f == "squad" else f
+            if (check_f, u.icon) in hidden or (
+                u.icon not in abbr and (check_f, "__facility__") in hidden):
                 continue
             code = abbr.get(u.icon, "G")
             counters_f[code] = counters_f.get(code, 0) + 1
@@ -570,8 +570,9 @@ class DashboardWindow(QMainWindow):
             labels.append((u.last_x, u.last_y, f"{code}{n:02d}{spd}", (*c, 220)))
         for u in self._tracker.lost_friendlies:
             f = faction_of(u)
-            if (f, u.icon) in hidden or (
-                u.icon not in abbr and (f, "__facility__") in hidden):
+            check_f = "friendly" if f == "squad" else f
+            if (check_f, u.icon) in hidden or (
+                u.icon not in abbr and (check_f, "__facility__") in hidden):
                 continue
             code = abbr.get(u.icon, "G")
             counters_f[code] = counters_f.get(code, 0) + 1
@@ -756,8 +757,8 @@ class DashboardWindow(QMainWindow):
             self._resize_filter_bar()
             # 状态栏
             if self._worker is not None:
-                self._status_label.setText(_("已连接"))
-            self._addr_label.setToolTip(_("点击更改连接地址"))
+                self._status_label.setText(_("status.connected"))
+            self._addr_label.setToolTip(_("tooltip.addr"))
             # 子面板
             self._sitrep_panel._retranslate()
             self._map_widget._retranslate()
@@ -781,21 +782,11 @@ class DashboardWindow(QMainWindow):
         from PyQt6.QtCore import QUrl
 
         text = _(
-            "<h3>War Thunder Dashboard  v{version}</h3>"
-            "<p>基于 PyQt6 的战争雷霆实时战术看板。"
-            "通过游戏内置 8111 端口 API 读取战场数据，"
-            "在副屏或局域网其他设备上显示实时地图、"
-            "单位追踪、态势感知与 HUD 消息。</p>"
-            "<p><a href='https://github.com/HYLiangSheng/WTDashboard' "
-            "style='color:#7ec8e3;'>github.com/HYLiangSheng/WTDashboard</a></p>"
-            "<hr style='border-color:#3a3a5c;'>"
-            "<p style='color:#aaaacc; font-size:10px;'>"
-            "欢迎提交 Issue、功能建议或参与贡献。"
-            "许可证：MIT</p>"
+            "dialog.about.text"
         ).format(version=VERSION)
 
         msg = QMessageBox(self)
-        msg.setWindowTitle(_("关于 War Thunder Dashboard"))
+        msg.setWindowTitle(_("dialog.about.title"))
         msg.setTextFormat(Qt.TextFormat.RichText)
         msg.setText(text)
         msg.setIcon(QMessageBox.Icon.Information)
@@ -855,7 +846,7 @@ class DashboardWindow(QMainWindow):
         self._current_host = host
         self._current_port = port
         self._addr_label.setText(f"🖥 {host}:{port}")
-        self._status_label.setText(_("正在连接 {}:{} ...").format(host, port))
+        self._status_label.setText(_("status.connecting").format(host, port))
         self._status_label.setStyleSheet("color: #7ec8e3; padding: 2px 8px;")
 
         self._setup_fetch_thread()
@@ -892,7 +883,7 @@ class DashboardWindow(QMainWindow):
             self._map_widget.set_labels(labels)
 
         # 状态栏（精简）
-        self._status_label.setText(_("已连接"))
+        self._status_label.setText(_("status.connected"))
         now = time.time()
         elapsed = now - self._last_fps_time
         if elapsed >= 1.0:

@@ -210,7 +210,7 @@ class MapWidget(QWidget):
             font = QFont("Segoe UI", 14)
             p.setFont(font)
             p.drawText(QRectF(0, 0, w, h), Qt.AlignmentFlag.AlignCenter,
-                       _("等待地图数据...\n请启动 War Thunder 并进入战斗"))
+                       _("map.waiting"))
 
         p.end()
 
