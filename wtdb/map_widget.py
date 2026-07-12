@@ -44,6 +44,11 @@ _ICON_FILE_MAP = {
     "Ship":          "SH_icon.png",
     "Boat":          "PT_icon.png",
     "AircraftCarrier": "AC_icon.png",
+    # 设施
+    "__airfield__":   "GC_icon.png",
+    "__facility__":   "GC_icon.png",
+    "__bp__":         "BP_icon.png",
+    "__cp__":         "CP_icon.png",
 }
 
 _ICON_CACHE: dict[str, QPixmap] = {}
@@ -99,6 +104,28 @@ def _draw_icon_shape(p: QPainter, icon: str, x: float, y: float, size: int,
     p.setPen(Qt.PenStyle.NoPen)
     p.setBrush(QColor(r, g, b, alpha))
     p.drawRect(QRectF(x - s / 2, y - s / 2, s, s))
+
+
+def _facility_icon(obj) -> str:
+    """根据设施类型返回对应的图标键（也用于筛选）。"""
+    name = obj.icon.lower() if obj.icon else ""
+    if obj.sx != 0 or obj.ex != 0:
+        return "__airfield__"
+    if "bomb" in name:
+        return "__bp__"
+    if "capture" in name or "zone" in name:
+        return "__cp__"
+    return "__facility__"
+
+
+_FACILITY_ICONS = {"airfield", "bombingzone", "bombing_point", "capturezone",
+                  "capturepoint", "helipad", "respawn_base", "air_spawn"}
+
+def _is_facility(obj) -> bool:
+    """判断是否为静态设施（机场、战区等）。"""
+    if obj.obj_type not in ("aircraft", "ground_model"):
+        return True
+    return obj.icon.lower() in _FACILITY_ICONS
 
 
 class MapWidget(QWidget):
@@ -221,12 +248,19 @@ class MapWidget(QWidget):
         friendlies = []
         enemies = []
         squad = []
+        facilities_friendly = []
+        facilities_enemy = []
 
         for obj in self._objects:
             if obj.is_player:
                 player = obj
                 continue
-            if obj.obj_type not in ("aircraft", "ground_model"):
+            # 设施（机场、战区等：非载具类型 或 特定图标）
+            if _is_facility(obj):
+                if obj.color_rgb[0] > 200:
+                    facilities_enemy.append(obj)
+                else:
+                    facilities_friendly.append(obj)
                 continue
             # 确定阵营
             if obj.color_rgb[2] > 200 and obj.color_rgb[0] < 100:
@@ -248,7 +282,9 @@ class MapWidget(QWidget):
             else:
                 enemies.append(obj)
 
-        # 绘制顺序：友军 → 敌军 → 小队 → 玩家
+        # 绘制顺序：设施 → 友军 → 敌军 → 小队 → 玩家
+        self._draw_facilities(p, facilities_friendly, ox, oy, mw, mh, False)
+        self._draw_facilities(p, facilities_enemy, ox, oy, mw, mh, True)
         self._draw_units(p, friendlies, ox, oy, mw, mh, COLOR_FRIENDLY, ICON_SIZE)
         self._draw_units(p, enemies, ox, oy, mw, mh, COLOR_ENEMY, ICON_SIZE)
         self._draw_units(p, squad, ox, oy, mw, mh, COLOR_SQUAD, ICON_SIZE)
@@ -287,11 +323,6 @@ class MapWidget(QWidget):
         for obj in units:
             x = ox + obj.x * mw
             y = oy + obj.y * mh
-            # 外圈光晕
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QColor(r, g, b, 40))
-            p.drawEllipse(QPointF(int(x), int(y)), size // 2 + 2, size // 2 + 2)
-
             # 图标
             _draw_icon_shape(p, obj.icon, x, y, size, r, g, b)
 
@@ -305,13 +336,48 @@ class MapWidget(QWidget):
                 p.drawLine(0, -int(size * 0.35), 0, -size - 2)
                 p.restore()
 
+    def _draw_facilities(self, p: QPainter, facilities: list[MapObject],
+                         ox: float, oy: float, mw: float, mh: float,
+                         is_enemy: bool):
+        """绘制静态设施：机场跑道、战区、占领区。"""
+        faction = "enemy" if is_enemy else "friendly"
+        r, g, b = (250, 50, 0) if is_enemy else (24, 90, 255)
+        for obj in facilities:
+            ficon = _facility_icon(obj)
+            if self._is_hidden(faction, ficon):
+                continue
+            if obj.sx != 0 or obj.ex != 0:
+                # 机场矩形跑道（归一化坐标 + 沿长轴延伸 50%）
+                x1, y1 = ox + obj.sx * mw, oy + obj.sy * mh
+                x2, y2 = ox + obj.ex * mw, oy + obj.ey * mh
+                if x1 > x2: x1, x2 = x2, x1
+                if y1 > y2: y1, y2 = y2, y1
+                rw, rh = x2 - x1, y2 - y1
+
+                if rw >= rh:
+                    extend = rw * 0.25
+                    x1 -= extend; x2 += extend
+                else:
+                    extend = rh * 0.25
+                    y1 -= extend; y2 += extend
+
+                # 纯色跑道矩形
+                p.setPen(QPen(QColor(r, g, b, 180), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+                p.setBrush(QColor(r, g, b, 55))
+                p.drawRect(QRectF(QPointF(x1, y1), QPointF(x2, y2)))
+            else:
+                # 非矩形设施（战区、占领区）：BP/CP 圆形图标
+                cx = ox + obj.x * mw
+                cy = oy + obj.y * mh
+                _draw_icon_shape(p, ficon, cx, cy, 18, r, g, b, 220)
+
     def _draw_labels(self, p: QPainter, ox: float, oy: float,
                      mw: float, mh: float):
         if not self._labels:
             return
         from PyQt6.QtWidgets import QApplication
         from PyQt6.QtGui import QFontMetrics
-        fs = max(6, QApplication.instance().font().pointSize() - 6)
+        fs = max(5, QApplication.instance().font().pointSize() - 8)
         font = QFont("Segoe UI", fs)
         p.setFont(font)
         fm = QFontMetrics(font)
@@ -341,11 +407,6 @@ class MapWidget(QWidget):
             y = oy + unit.last_y * mh
             elapsed = now - unit.last_seen
             alpha = max(40, 180 - int(elapsed * 3))
-
-            # 外圈光晕
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QColor(r, g, b, max(20, alpha // 3)))
-            p.drawEllipse(QPointF(int(x), int(y)), ICON_SIZE // 2 + 1, ICON_SIZE // 2 + 1)
 
             # 图标
             _draw_icon_shape(p, unit.icon, x, y, ICON_SIZE, r, g, b, alpha)

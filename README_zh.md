@@ -24,7 +24,7 @@
 
 ### 下载安装包
 
-从 [Releases](../../releases) 下载最新的 **`WTDashboard_Setup_v1_0_1.exe`**，安装到 `%LOCALAPPDATA%\WTDashboard`，自动创建开始菜单和桌面快捷方式。
+从 [Releases](../../releases) 下载最新的 **`WTDashboard_Setup_v1_1_0.exe`**，安装到 `%LOCALAPPDATA%\WTDashboard`，自动创建开始菜单和桌面快捷方式。
 
 > **提示：** 目前仅提供 Windows 安装包，不提供 macOS / Linux 版本。macOS / Linux 用户可直接运行源码，或按照下方流程自行构建安装包。
 
@@ -72,7 +72,7 @@ pyinstaller --noconfirm WTDashboard.spec
 makensis setup.nsi
 ```
 
-产物: `dist/WTDashboard_Setup_v1_0_1.exe`
+产物: `dist/WTDashboard_Setup_v1_1_0.exe`
 
 ### macOS
 
@@ -83,7 +83,7 @@ pip install -r requirements.txt
 bash build_macos.sh
 ```
 
-产物: `dist/WTDashboard_Setup_v1_0_1.dmg`
+产物: `dist/WTDashboard_Setup_v1_1_0.dmg`
 
 ### Linux
 
@@ -94,7 +94,7 @@ pip install -r requirements.txt
 bash build_linux.sh
 ```
 
-产物: `dist/WTDashboard_Setup_v1_0_1.AppImage`
+产物: `dist/WTDashboard_Setup_v1_1_0.AppImage`
 
 ## 许可证
 

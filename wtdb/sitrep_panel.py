@@ -15,38 +15,38 @@ from .i18n import _
 
 # 类型分组（按显示顺序）
 TYPE_GROUPS = [
-    ("Fighter",     "vehicle.fighter",   "空"),
-    ("Assault",     "vehicle.attacker",   "空"),
-    ("Bomber",      "vehicle.bomber",   "空"),
-    ("LightTank",   "vehicle.light_tank", "陆"),
-    ("MediumTank",  "vehicle.med_tank", "陆"),
-    ("HeavyTank",   "vehicle.heavy_tank", "陆"),
-    ("TankDestroyer","vehicle.td",    "陆"),
-    ("Tracked",     "vehicle.tracked", "陆"),
-    ("Wheeled",     "vehicle.wheeled", "陆"),
-    ("SPAA",        "vehicle.spaa", "陆"),
-    ("Airdefence",  "vehicle.air_defense",     "陆"),
-    ("SAM",         "vehicle.sam", "陆"),
-    ("MLRS",        "vehicle.mlrs",   "陆"),
-    ("TBMLauncher", "vehicle.tbm", "陆"),
-    ("Radar",       "vehicle.radar",     "陆"),
-    ("Destroyer",   "vehicle.destroyer",   "海"),
-    ("MissileDestroyer","vehicle.missile_destroyer","海"),
-    ("LightCruiser","vehicle.light_cruiser", "海"),
-    ("MissileLightCruiser","vehicle.missile_light_cruiser","海"),
-    ("HeavyCruiser","vehicle.heavy_cruiser", "海"),
-    ("MissileHeavyCruiser","vehicle.missile_heavy_cruiser","海"),
-    ("BattleShip",  "vehicle.battleship",   "海"),
-    ("MissileBattleship","vehicle.missile_battleship","海"),
-    ("Frigate",     "vehicle.frigate",   "海"),
-    ("MissileFrigate","vehicle.missile_frigate","海"),
-    ("Corvette",    "vehicle.corvette",   "海"),
-    ("MissileCorvette","vehicle.missile_corvette","海"),
-    ("Boat",        "vehicle.boat",     "海"),
-    ("MissileBoat", "vehicle.missile_boat",   "海"),
-    ("AircraftCarrier","vehicle.carrier",  "海"),
-    ("Submarine",   "vehicle.submarine",     "海"),
-    ("Ship",        "vehicle.ship",     "海"),
+    ("Fighter",     "vehicle.fighter",   "sitrep.cat.air"),
+    ("Assault",     "vehicle.attacker",   "sitrep.cat.air"),
+    ("Bomber",      "vehicle.bomber",   "sitrep.cat.air"),
+    ("LightTank",   "vehicle.light_tank", "sitrep.cat.ground"),
+    ("MediumTank",  "vehicle.med_tank", "sitrep.cat.ground"),
+    ("HeavyTank",   "vehicle.heavy_tank", "sitrep.cat.ground"),
+    ("TankDestroyer","vehicle.td",    "sitrep.cat.ground"),
+    ("Tracked",     "vehicle.tracked", "sitrep.cat.ground"),
+    ("Wheeled",     "vehicle.wheeled", "sitrep.cat.ground"),
+    ("SPAA",        "vehicle.spaa", "sitrep.cat.ground"),
+    ("Airdefence",  "vehicle.air_defense",     "sitrep.cat.ground"),
+    ("SAM",         "vehicle.sam", "sitrep.cat.ground"),
+    ("MLRS",        "vehicle.mlrs",   "sitrep.cat.ground"),
+    ("TBMLauncher", "vehicle.tbm", "sitrep.cat.ground"),
+    ("Radar",       "vehicle.radar",     "sitrep.cat.ground"),
+    ("Destroyer",   "vehicle.destroyer",   "sitrep.cat.sea"),
+    ("MissileDestroyer","vehicle.missile_destroyer","sitrep.cat.sea"),
+    ("LightCruiser","vehicle.light_cruiser", "sitrep.cat.sea"),
+    ("MissileLightCruiser","vehicle.missile_light_cruiser","sitrep.cat.sea"),
+    ("HeavyCruiser","vehicle.heavy_cruiser", "sitrep.cat.sea"),
+    ("MissileHeavyCruiser","vehicle.missile_heavy_cruiser","sitrep.cat.sea"),
+    ("BattleShip",  "vehicle.battleship",   "sitrep.cat.sea"),
+    ("MissileBattleship","vehicle.missile_battleship","sitrep.cat.sea"),
+    ("Frigate",     "vehicle.frigate",   "sitrep.cat.sea"),
+    ("MissileFrigate","vehicle.missile_frigate","sitrep.cat.sea"),
+    ("Corvette",    "vehicle.corvette",   "sitrep.cat.sea"),
+    ("MissileCorvette","vehicle.missile_corvette","sitrep.cat.sea"),
+    ("Boat",        "vehicle.boat",     "sitrep.cat.sea"),
+    ("MissileBoat", "vehicle.missile_boat",   "sitrep.cat.sea"),
+    ("AircraftCarrier","vehicle.carrier",  "sitrep.cat.sea"),
+    ("Submarine",   "vehicle.submarine",     "sitrep.cat.sea"),
+    ("Ship",        "vehicle.ship",     "sitrep.cat.sea"),
 ]
 
 ABBR = {
@@ -219,7 +219,7 @@ class SitrepPanel(QWidget):
                    icon_key: str = "") -> QTreeWidgetItem:
         active_n = sum(1 for u in group if u.is_active)
         lost_n = len(group) - active_n
-        parts = [f"[{emoji}] {_(label)}", str(len(group))]
+        parts = [f"[{_(emoji)}] {_(label)}", str(len(group))]
         if lost_n > 0:
             parts.append(f"({lost_n}{_('sitrep.lost')})")
         parent = QTreeWidgetItem([f"{'  '.join(parts)}"])

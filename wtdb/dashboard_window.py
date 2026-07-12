@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QScrollArea, QToolButton, QRadioButton, QButtonGroup,
 )
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 
 from .api_client import FetchWorker, GameState
 from .map_widget import MapWidget
@@ -416,7 +416,9 @@ class DashboardWindow(QMainWindow):
             ("filter.air.atk_heli", "AttackHelicopter"), ("filter.air.heli", "UtilityHelicopter"),
             ("filter.ground.light_tank", "LightTank"), ("filter.ground.med_tank", "MediumTank"), ("filter.ground.heavy_tank", "HeavyTank"),
             ("filter.ground.td", "TankDestroyer"), ("filter.ground.spaa", "SPAA"), ("filter.ground.sam", "SAM"),
-            ("filter.ground.facility", "__facility__"),
+            ("filter.ground.airfield", "__airfield__"),
+            ("filter.ground.bombing_zone", "__bp__"),
+            ("filter.ground.capture_point", "__cp__"),
             ("filter.sea.destroyer", "Destroyer"), ("filter.sea.frigate", "Frigate"),
             ("filter.sea.light_cruiser", "LightCruiser"), ("filter.sea.heavy_cruiser", "HeavyCruiser"),
             ("filter.sea.battlecruiser", "Battlecruiser"), ("filter.sea.battleship", "BattleShip"),
@@ -424,7 +426,7 @@ class DashboardWindow(QMainWindow):
         ]
         air_keys = ["Fighter", "Assault", "Bomber", "AttackHelicopter", "UtilityHelicopter"]
         land_keys = ["LightTank", "MediumTank", "HeavyTank", "TankDestroyer", "SPAA", "SAM",
-                     "__facility__"]
+                     "__airfield__", "__bp__", "__cp__"]
         sea_keys = ["Destroyer", "Frigate", "LightCruiser", "HeavyCruiser", "Battlecruiser",
                     "BattleShip", "Submarine", "Ship", "Boat"]
 

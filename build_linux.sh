@@ -7,8 +7,8 @@
 set -e
 
 APP_NAME="WTDashboard"
-VERSION="1.0.1"
-APPIMAGE_NAME="WTDashboard_Setup_v1_0_1"
+VERSION="1.1.0"
+APPIMAGE_NAME="WTDashboard_Setup_v1_1_0"
 
 echo "=== 清理旧构建 ==="
 rm -rf build dist *.spec.bak
