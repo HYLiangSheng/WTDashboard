@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QScrollArea, QToolButton, QRadioButton, QButtonGroup,
 )
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 from .api_client import FetchWorker, GameState
 from .map_widget import MapWidget

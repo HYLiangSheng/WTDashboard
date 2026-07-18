@@ -24,7 +24,7 @@
 
 ### 下载安装包
 
-从 [Releases](../../releases) 下载最新的 **`WTDashboard_Setup_v1_1_0.exe`**，安装到 `%LOCALAPPDATA%\WTDashboard`，自动创建开始菜单和桌面快捷方式。
+从 [Releases](../../releases) 下载最新的 **`WTDashboard_Setup_v1_1_1.exe`**，安装到 `%LOCALAPPDATA%\WTDashboard`，自动创建开始菜单和桌面快捷方式。
 
 > **提示：** 目前仅提供 Windows 安装包，不提供 macOS / Linux 版本。macOS / Linux 用户可直接运行源码，或按照下方流程自行构建安装包。
 
@@ -52,8 +52,8 @@ WTDashboard/
 │   └── config.py             # JSON 配置读写
 ├── game_icons/          # 载具类型图标（可替换 PNG）
 ├── locales/             # 语言包（JSON）
-├── build_macos.sh      # macOS .dmg 构建脚本
-├── build_linux.sh      # Linux AppImage 构建脚本
+├── build_macos.sh      # macOS .pkg 构建脚本
+├── build_linux.sh      # Linux .deb 构建脚本
 ├── setup.nsi            # Windows NSIS 安装脚本
 ├── WTDashboard.spec     # PyInstaller 配置
 ├── icon.png             # 应用图标 (Linux/macOS)
@@ -72,7 +72,7 @@ pyinstaller --noconfirm WTDashboard.spec
 makensis setup.nsi
 ```
 
-产物: `dist/WTDashboard_Setup_v1_1_0.exe`
+产物: `dist/WTDashboard_Setup_v1_1_1.exe`（自动检测旧版本安装位置）
 
 ### macOS
 
@@ -83,18 +83,18 @@ pip install -r requirements.txt
 bash build_macos.sh
 ```
 
-产物: `dist/WTDashboard_Setup_v1_1_0.dmg`
+产物: `dist/WTDashboard_Setup_v1_1_1.pkg`（安装到 /Applications，自动升级）
 
 ### Linux
 
-需要 Python 3.11+ 和 [appimagetool](https://github.com/AppImage/AppImageKit)。
+需要 Python 3.11+ 和 `dpkg-deb`（大多数发行版自带）。
 
 ```bash
 pip install -r requirements.txt
 bash build_linux.sh
 ```
 
-产物: `dist/WTDashboard_Setup_v1_1_0.AppImage`
+产物: `dist/WTDashboard_Setup_v1_1_1.deb`（自动升级旧版本）
 
 ## 许可证
 

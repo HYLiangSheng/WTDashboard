@@ -2,13 +2,13 @@
 # =============================================================
 # WTDashboard Linux 构建脚本
 # 用法: bash build_linux.sh
-# 产物: dist/WTDashboard_Setup_v1_0_1.AppImage
+# 产物: dist/WTDashboard_Setup_v1_1_0.deb
 # =============================================================
 set -e
 
 APP_NAME="WTDashboard"
-VERSION="1.1.0"
-APPIMAGE_NAME="WTDashboard_Setup_v1_1_0"
+VERSION="1.1.1"
+DEB_NAME="WTDashboard_Setup_v1_1_0"
 
 echo "=== 清理旧构建 ==="
 rm -rf build dist *.spec.bak
@@ -40,55 +40,53 @@ pyinstaller --noconfirm \
     --exclude-module PIL.ImageQt \
     main.py
 
-echo "=== 创建 AppDir 结构 ==="
-APPDIR="dist/${APP_NAME}.AppDir"
-mkdir -p "$APPDIR/usr/bin"
-mkdir -p "$APPDIR/usr/share/icons"
-mkdir -p "$APPDIR/usr/share/applications"
+echo "=== 创建 deb 安装包结构（支持自动覆盖旧版本） ==="
+DEB_ROOT="dist/${APP_NAME}_deb"
+mkdir -p "$DEB_ROOT/DEBIAN"
+mkdir -p "$DEB_ROOT/usr/bin"
+mkdir -p "$DEB_ROOT/usr/share/applications"
+mkdir -p "$DEB_ROOT/usr/share/icons/hicolor/256x256/apps"
 
-# 复制构建产物
-cp -R "dist/${APP_NAME}/"* "$APPDIR/usr/bin/"
+# 复制程序
+cp -R "dist/${APP_NAME}/"* "$DEB_ROOT/usr/bin/"
 
-# 创建启动脚本
-cat > "$APPDIR/AppRun" << 'APPRUN'
+# 启动脚本
+cat > "$DEB_ROOT/usr/bin/wtdashboard" << 'EOF'
 #!/bin/bash
-HERE="$(dirname "$(readlink -f "$0")")"
-exec "$HERE/usr/bin/WTDashboard" "$@"
-APPRUN
-chmod +x "$APPDIR/AppRun"
+exec /usr/bin/WTDashboard "$@"
+EOF
+chmod +x "$DEB_ROOT/usr/bin/wtdashboard"
 
-# 复制图标
-cp icon.png "$APPDIR/usr/share/icons/wtdashboard.png"
-cp icon.png "$APPDIR/wtdashboard.png"
+# 图标
+cp icon.png "$DEB_ROOT/usr/share/icons/hicolor/256x256/apps/wtdashboard.png"
 
-# 创建 .desktop 文件
-cat > "$APPDIR/usr/share/applications/wtdashboard.desktop" << DESKTOP
+# .desktop
+cat > "$DEB_ROOT/usr/share/applications/wtdashboard.desktop" << EOF
 [Desktop Entry]
 Name=War Thunder Dashboard
 Comment=Real-time tactical display for War Thunder
-Exec=WTDashboard
+Exec=/usr/bin/wtdashboard
 Icon=wtdashboard
 Type=Application
 Categories=Game;Utility;
-DESKTOP
+EOF
 
-# 创建符号链接（AppImage 要求）
-ln -sf usr/share/applications/wtdashboard.desktop "$APPDIR/wtdashboard.desktop"
-ln -sf usr/share/icons/wtdashboard.png "$APPDIR/.DirIcon"
+# DEBIAN control
+cat > "$DEB_ROOT/DEBIAN/control" << EOF
+Package: wtdashboard
+Version: $VERSION
+Section: games
+Priority: optional
+Architecture: amd64
+Maintainer: WTDashboard
+Description: War Thunder Dashboard
+ Real-time tactical display for War Thunder.
+ Displays live map, unit tracking, situation report, and HUD messages.
+EOF
 
-echo "=== 打包 AppImage ==="
-# 需要先安装 appimagetool: https://github.com/AppImage/AppImageKit
-if command -v appimagetool &> /dev/null; then
-    ARCH=x86_64 appimagetool "$APPDIR" "dist/${APPIMAGE_NAME}.AppImage"
-    echo "=== 完成 ==="
-    echo "产物: dist/${APPIMAGE_NAME}.AppImage"
-    ls -lh "dist/${APPIMAGE_NAME}.AppImage"
-else
-    echo "=== AppImage 工具未安装 ==="
-    echo "请安装 appimagetool 后重新运行:"
-    echo "  wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
-    echo "  chmod +x appimagetool-x86_64.AppImage"
-    echo "  sudo mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool"
-    echo ""
-    echo "当前产物位于: $APPDIR"
-fi
+dpkg-deb --build "$DEB_ROOT" "dist/${DEB_NAME}.deb"
+rm -rf "$DEB_ROOT"
+
+echo "=== 完成 ==="
+echo "产物: dist/${DEB_NAME}.deb"
+ls -lh "dist/${DEB_NAME}.deb"

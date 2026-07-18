@@ -122,9 +122,11 @@ _FACILITY_ICONS = {"airfield", "bombingzone", "bombing_point", "capturezone",
                   "capturepoint", "helipad", "respawn_base", "air_spawn"}
 
 def _is_facility(obj) -> bool:
-    """判断是否为静态设施（机场、战区等）。"""
-    if obj.obj_type not in ("aircraft", "ground_model"):
+    """判断是否为静态设施（机场、战区等），避免误识别无关对象。"""
+    # 有区域坐标 → 机场
+    if obj.sx != 0 or obj.ex != 0:
         return True
+    # 已知设施图标名
     return obj.icon.lower() in _FACILITY_ICONS
 
 
@@ -347,7 +349,7 @@ class MapWidget(QWidget):
             if self._is_hidden(faction, ficon):
                 continue
             if obj.sx != 0 or obj.ex != 0:
-                # 机场矩形跑道（归一化坐标 + 沿长轴延伸 50%）
+                # 机场矩形跑道（有区域坐标）
                 x1, y1 = ox + obj.sx * mw, oy + obj.sy * mh
                 x2, y2 = ox + obj.ex * mw, oy + obj.ey * mh
                 if x1 > x2: x1, x2 = x2, x1
@@ -361,12 +363,20 @@ class MapWidget(QWidget):
                     extend = rh * 0.25
                     y1 -= extend; y2 += extend
 
-                # 纯色跑道矩形
-                p.setPen(QPen(QColor(r, g, b, 180), 2.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
-                p.setBrush(QColor(r, g, b, 55))
+                # 实心矩形
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(QColor(r, g, b, 70))
                 p.drawRect(QRectF(QPointF(x1, y1), QPointF(x2, y2)))
+            elif ficon == "__airfield__":
+                # 机场无区域坐标：以 x/y 为中心画实心矩形
+                cx = ox + obj.x * mw
+                cy = oy + obj.y * mh
+                s = 14
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(QColor(r, g, b, 70))
+                p.drawRect(QRectF(cx - s, cy - s * 0.4, s * 2, s * 0.8))
             else:
-                # 非矩形设施（战区、占领区）：BP/CP 圆形图标
+                # 战区、占领区：BP/CP 图标
                 cx = ox + obj.x * mw
                 cy = oy + obj.y * mh
                 _draw_icon_shape(p, ficon, cx, cy, 18, r, g, b, 220)

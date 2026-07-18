@@ -7,8 +7,8 @@
 set -e
 
 APP_NAME="WTDashboard"
-VERSION="1.1.0"
-DMG_NAME="WTDashboard_Setup_v1_1_0"
+VERSION="1.1.1"
+PKG_NAME="WTDashboard_Setup_v1_1_0"
 
 echo "=== 清理旧构建 ==="
 rm -rf build dist *.spec.bak
@@ -41,21 +41,13 @@ pyinstaller --noconfirm \
     --osx-bundle-identifier com.wtdashboard.app \
     main.py
 
-echo "=== 创建 DMG ==="
-# 创建临时目录结构
-mkdir -p dmg_root
-cp -R "dist/${APP_NAME}.app" dmg_root/
-ln -s /Applications dmg_root/Applications
-
-# 打包 DMG
-hdiutil create -volname "$APP_NAME" \
-    -srcfolder dmg_root \
-    -ov -format UDZO \
-    "dist/${DMG_NAME}.dmg"
-
-# 清理
-rm -rf dmg_root
+echo "=== 创建 pkg 安装包（支持自动覆盖旧版本） ==="
+pkgbuild --install-location /Applications \
+    --component "dist/${APP_NAME}.app" \
+    --identifier com.wtdashboard.app \
+    --version "$VERSION" \
+    "dist/${PKG_NAME}.pkg"
 
 echo "=== 完成 ==="
-echo "产物: dist/${DMG_NAME}.dmg"
-ls -lh "dist/${DMG_NAME}.dmg"
+echo "产物: dist/${PKG_NAME}.pkg"
+ls -lh "dist/${PKG_NAME}.pkg"

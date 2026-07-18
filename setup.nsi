@@ -7,14 +7,14 @@ RequestExecutionLevel user
 
 !define PRODUCT_NAME "WTDashboard"
 !define PRODUCT_DESC "War Thunder Dashboard"
-!define PRODUCT_VERSION "1.1.0"
+!define PRODUCT_VERSION "1.1.1"
 !define PRODUCT_PUBLISHER "WTDashboard"
 !define EXE_NAME "WTDashboard.exe"
 !define REG_UNINST "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define REG_APP "Software\${PRODUCT_PUBLISHER}\${PRODUCT_NAME}"
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "dist\WTDashboard_Setup_v1_1_0.exe"
+OutFile "dist\WTDashboard_Setup_v1_1_1.exe"
 InstallDir "$LOCALAPPDATA\${PRODUCT_NAME}"
 Icon "icon.ico"
 
@@ -29,6 +29,12 @@ Function .onInit
   ; 停止正在运行的实例
   nsExec::ExecToStack 'taskkill /f /im "${EXE_NAME}"'
   Pop $0
+
+  ; 读取旧版本安装路径，自动复用
+  ReadRegStr $9 HKCU "${REG_APP}" "InstallDir"
+  ${If} $9 != ""
+    StrCpy $INSTDIR $9
+  ${EndIf}
 
   ; 读取已安装版本
   ReadRegStr $1 HKCU "${REG_UNINST}" "DisplayVersion"
