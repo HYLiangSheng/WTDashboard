@@ -25,3 +25,6 @@ Thumbs.db
 
 # Config (may contain user-specific paths)
 wtdb_config.json
+
+# AI agent instructions (local only)
+AGENTS.md
