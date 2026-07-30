@@ -365,7 +365,7 @@ class MapWidget(QWidget):
 
                 # 实心矩形
                 p.setPen(Qt.PenStyle.NoPen)
-                p.setBrush(QColor(r, g, b, 70))
+                p.setBrush(QColor(r, g, b, 255))
                 p.drawRect(QRectF(QPointF(x1, y1), QPointF(x2, y2)))
             elif ficon == "__airfield__":
                 # 机场无区域坐标：以 x/y 为中心画实心矩形
@@ -373,7 +373,7 @@ class MapWidget(QWidget):
                 cy = oy + obj.y * mh
                 s = 14
                 p.setPen(Qt.PenStyle.NoPen)
-                p.setBrush(QColor(r, g, b, 70))
+                p.setBrush(QColor(r, g, b, 255))
                 p.drawRect(QRectF(cx - s, cy - s * 0.4, s * 2, s * 0.8))
             else:
                 # 战区、占领区：BP/CP 图标
@@ -402,7 +402,7 @@ class MapWidget(QWidget):
 
     def _draw_lost_markers(self, p: QPainter, ox: float, oy: float,
                            mw: float, mh: float, faction: str = "enemy"):
-        """绘制已消失单位的最后出现位置（半透明幽灵标记）。"""
+        """绘制已消失单位的惯性导航估算位置（半透明幽灵标记）。"""
         now = time.time()
         units = self._lost_enemies if faction == "enemy" else self._lost_friendlies
         if faction == "enemy":
@@ -413,8 +413,10 @@ class MapWidget(QWidget):
         for unit in units:
             if self._is_hidden(faction, unit.icon):
                 continue
-            x = ox + unit.last_x * mw
-            y = oy + unit.last_y * mh
+            # 惯性导航：基于最后已知航向和速度外推当前位置
+            est_x, est_y = unit.estimated_position(now)
+            x = ox + est_x * mw
+            y = oy + est_y * mh
             elapsed = now - unit.last_seen
             alpha = max(40, 180 - int(elapsed * 3))
 

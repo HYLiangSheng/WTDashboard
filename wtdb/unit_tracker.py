@@ -48,6 +48,46 @@ class TrackedUnit:
     # 位置历史 [(timestamp, x, y), ...]
     pos_history: list[tuple[float, float, float]] = field(default_factory=list)
 
+    def estimated_position(self, now: float) -> tuple[float, float]:
+        """惯性导航估算位置 —— 基于最后已知航向和速度外推当前位置。
+        
+        Returns:
+            (est_x, est_y): 估算的归一化坐标，已钳制在 [0, 1] 范围内。
+        """
+        elapsed = now - self.last_seen
+        # 没有速度或时间过短 → 返回最后已知位置
+        if self.speed_norm <= 0 or elapsed <= 0:
+            return self.last_x, self.last_y
+
+        # 计算单位方向向量（优先用 last_dx/last_dy，否则用位置历史推算）
+        dir_x, dir_y = self.last_dx, self.last_dy
+        mag = math.hypot(dir_x, dir_y)
+        if mag < 1e-6:
+            # 无航向数据 → 用位置历史首尾推算方向
+            if len(self.pos_history) >= 2:
+                _, x0, y0 = self.pos_history[0]
+                _, x1, y1 = self.pos_history[-1]
+                dx, dy = x1 - x0, y1 - y0
+                mag = math.hypot(dx, dy)
+                if mag > 1e-6:
+                    dir_x, dir_y = dx / mag, dy / mag
+                else:
+                    return self.last_x, self.last_y
+            else:
+                return self.last_x, self.last_y
+        else:
+            dir_x, dir_y = dir_x / mag, dir_y / mag
+
+        # 推算距离 = 速度 × 时间
+        distance = self.speed_norm * elapsed
+        est_x = self.last_x + dir_x * distance
+        est_y = self.last_y + dir_y * distance
+
+        # 钳制在地图范围内
+        est_x = max(0.0, min(1.0, est_x))
+        est_y = max(0.0, min(1.0, est_y))
+        return est_x, est_y
+
 
 class UnitTracker:
     """管理所有追踪单位的生命周期。"""
@@ -160,11 +200,21 @@ class UnitTracker:
 
     def _match_and_update(self, current_objs: list[MapObject], now: float,
                           matched_ids: set[int], is_enemy: bool):
-        """将当前帧的对象匹配到已有追踪单位，或创建新追踪记录。"""
-        # 获取同阵营所有已有单位作为候选
-        candidates = [
+        """将当前帧的对象匹配到已有追踪单位，或创建新追踪记录。
+        
+        匹配优先级：
+        1. 活跃单位（is_active=True）—— 用最后已知位置匹配
+        2. 幽灵单位（is_active=False）—— 用惯导估算位置匹配（阈值更宽）
+        """
+        # 获取同阵营活跃单位作为候选
+        active_candidates = [
             u for u in self._units.values()
             if u.is_enemy == is_enemy and u.is_active
+        ]
+        # 获取同阵营幽灵单位作为候选
+        ghost_candidates = [
+            u for u in self._units.values()
+            if u.is_enemy == is_enemy and not u.is_active
         ]
         used_uids: set[int] = set()
 
@@ -172,10 +222,10 @@ class UnitTracker:
             best_uid: int | None = None
             best_dist = MATCH_THRESHOLD
 
-            for unit in candidates:
+            # 先匹配活跃单位
+            for unit in active_candidates:
                 if unit.uid in used_uids:
                     continue
-                # 至少类型相同（空/地分开）
                 if unit.obj_type != obj.obj_type:
                     continue
                 dist = math.hypot(obj.x - unit.last_x, obj.y - unit.last_y)
@@ -183,11 +233,29 @@ class UnitTracker:
                     best_dist = dist
                     best_uid = unit.uid
 
+            # 未匹配到活跃单位，尝试用惯导位置匹配幽灵单位
+            if best_uid is None:
+                for unit in ghost_candidates:
+                    if unit.uid in used_uids:
+                        continue
+                    if unit.obj_type != obj.obj_type:
+                        continue
+                    est_x, est_y = unit.estimated_position(now)
+                    dist = math.hypot(obj.x - est_x, obj.y - est_y)
+                    # 惯导有误差，放宽阈值
+                    if dist < MATCH_THRESHOLD * 2:
+                        best_uid = unit.uid
+                        break
+
             if best_uid is not None:
                 # 匹配成功 —— 更新已有单位
                 unit = self._units[best_uid]
                 used_uids.add(best_uid)
                 matched_ids.add(best_uid)
+                # 幽灵单位重新捕获 → 激活
+                if not unit.is_active:
+                    unit.is_active = True
+                    unit.disappear_count = 0
                 self._update_unit(unit, obj, now)
             else:
                 # 新单位
