@@ -19,7 +19,8 @@ a = Analysis(
               'PIL.ImageQt', 'PyQt6.QtNetwork', 'PyQt6.QtSql',
               'PyQt6.QtTest', 'PyQt6.QtWebEngine', 'PyQt6.QtWebChannel',
               'PyQt6.QtPrintSupport', 'PyQt6.QtDBus', 'PyQt6.QtSvg',
-              'PyQt6.QtXml', 'PyQt6.QtOpenGL', 'PyQt6.QtOpenGLWidgets'],
+              'PyQt6.QtXml', 'PyQt6.QtOpenGL', 'PyQt6.QtOpenGLWidgets',
+              'pyinstaller', 'PyInstaller', 'pillow', 'PIL'],
     noarchive=False,
     optimize=2,
 )
