@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .i18n import _
+from .version import VERSION
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
@@ -351,7 +352,7 @@ class FetchWorker(QObject):
         try:
             req = Request(
                 f"{self.BASE_URL}{path}",
-                headers={"User-Agent": "WTDashboard/1.2.0"},
+                headers={"User-Agent": f"WTDashboard/{VERSION}"},
             )
             with urlopen(req, timeout=self.TIMEOUT) as resp:
                 return json.loads(resp.read().decode())
@@ -362,7 +363,7 @@ class FetchWorker(QObject):
         try:
             req = Request(
                 f"{self.BASE_URL}{path}",
-                headers={"User-Agent": "WTDashboard/1.2.0"},
+                headers={"User-Agent": f"WTDashboard/{VERSION}"},
             )
             with urlopen(req, timeout=3.0) as resp:
                 return resp.read()
