@@ -7,7 +7,7 @@
 set -e
 
 APP_NAME="WTDashboard"
-VERSION="1.1.1"
+VERSION="1.2.0"
 DEB_NAME="WTDashboard_Setup_v1_1_0"
 
 echo "=== 清理旧构建 ==="

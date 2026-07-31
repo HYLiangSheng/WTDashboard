@@ -7,14 +7,14 @@ RequestExecutionLevel user
 
 !define PRODUCT_NAME "WTDashboard"
 !define PRODUCT_DESC "War Thunder Dashboard"
-!define PRODUCT_VERSION "1.1.1"
+!define PRODUCT_VERSION "1.2.0"
 !define PRODUCT_PUBLISHER "WTDashboard"
 !define EXE_NAME "WTDashboard.exe"
 !define REG_UNINST "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define REG_APP "Software\${PRODUCT_PUBLISHER}\${PRODUCT_NAME}"
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "dist\WTDashboard_Setup_v1_1_1.exe"
+OutFile "dist\WTDashboard_Setup_v1_2_0.exe"
 InstallDir "$LOCALAPPDATA\${PRODUCT_NAME}"
 Icon "icon.ico"
 

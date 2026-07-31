@@ -351,7 +351,7 @@ class FetchWorker(QObject):
         try:
             req = Request(
                 f"{self.BASE_URL}{path}",
-                headers={"User-Agent": "WTDashboard/1.1.1"},
+                headers={"User-Agent": "WTDashboard/1.2.0"},
             )
             with urlopen(req, timeout=self.TIMEOUT) as resp:
                 return json.loads(resp.read().decode())
@@ -362,7 +362,7 @@ class FetchWorker(QObject):
         try:
             req = Request(
                 f"{self.BASE_URL}{path}",
-                headers={"User-Agent": "WTDashboard/1.1.1"},
+                headers={"User-Agent": "WTDashboard/1.2.0"},
             )
             with urlopen(req, timeout=3.0) as resp:
                 return resp.read()

@@ -1,13 +1,23 @@
 """War Thunder Dashboard 入口。
 
+启动流程：
+  parse_args() → QApplication → DashboardWindow → app.exec()
+
 两种运行模式：
   1. 直连模式（默认）   python main.py
   2. 远程模式           python main.py --remote --host 192.168.1.x
 
+命令行参数：
+  --remote          连接远程主机（配合 --host 使用）
+  --host IP         游戏主机地址（默认 localhost）
+  --port PORT       WT API 端口（默认 8111）
+  --refresh MS      UI 刷新间隔毫秒（默认 100）
+  --fullscreen      全屏启动
+
 快捷键:
     F11       — 全屏切换
-    Ctrl+Q   — 退出
-    Ctrl+N   — 连接设置
+    Ctrl+Q    — 退出
+    Ctrl+N    — 连接设置
 """
 
 import sys
