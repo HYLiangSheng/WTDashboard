@@ -48,16 +48,19 @@ In War Thunder, go to **Options → Main parameters → Air Battle settings** (o
 ```
 WTDashboard/
 ├── main.py              # Entry point
+├── requirements.txt     # Python dependencies
 ├── wtdb/                # Application package
+│   ├── __init__.py           # Package init
+│   ├── api_client.py         # WT 8111 API client
+│   ├── config.py             # JSON config save/load
 │   ├── dashboard_window.py   # Main window, sidebar, filter bar
+│   ├── hud_feed.py           # HUD message feed
+│   ├── i18n.py               # Multi-language engine
 │   ├── map_widget.py         # Tactical map rendering
 │   ├── sitrep_panel.py       # Situation report tree
-│   ├── hud_feed.py           # HUD message feed
-│   ├── unit_tracker.py       # Unit tracking & ghost logic
-│   ├── api_client.py         # WT 8111 API client
-│   ├── i18n.py               # Multi-language engine
 │   ├── styles.py             # Dark theme QSS
-│   └── config.py             # JSON config save/load
+│   ├── unit_tracker.py       # Unit tracking & ghost logic
+│   └── version.py            # Version info
 ├── game_icons/          # Vehicle type icons (replaceable PNGs)
 ├── locales/             # Language packs (JSON)
 ├── build_macos.sh      # macOS .pkg build script

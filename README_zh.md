@@ -40,16 +40,19 @@ python main.py
 ```
 WTDashboard/
 ├── main.py              # 入口
+├── requirements.txt     # Python 依赖
 ├── wtdb/                # 应用包
+│   ├── __init__.py           # 包初始化
+│   ├── api_client.py         # WT 8111 API 客户端
+│   ├── config.py             # JSON 配置读写
 │   ├── dashboard_window.py   # 主窗口、侧边栏、筛选栏
+│   ├── hud_feed.py           # HUD 消息流
+│   ├── i18n.py               # 多语言引擎
 │   ├── map_widget.py         # 战术地图渲染
 │   ├── sitrep_panel.py       # 态势感知树
-│   ├── hud_feed.py           # HUD 消息流
-│   ├── unit_tracker.py       # 单位追踪与幽灵逻辑
-│   ├── api_client.py         # WT 8111 API 客户端
-│   ├── i18n.py               # 多语言引擎
 │   ├── styles.py             # 暗色主题 QSS
-│   └── config.py             # JSON 配置读写
+│   ├── unit_tracker.py       # 单位追踪与幽灵逻辑
+│   └── version.py            # 版本号
 ├── game_icons/          # 载具类型图标（可替换 PNG）
 ├── locales/             # 语言包（JSON）
 ├── build_macos.sh      # macOS .pkg 构建脚本
