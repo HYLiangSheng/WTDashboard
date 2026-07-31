@@ -24,6 +24,12 @@ a = Analysis(
     optimize=2,
 )
 
+# Exclude conda base ICU DLLs — they are incompatible with PyPI Qt6Core.
+# Qt6Core uses system32's icuuc.dll instead, which is compatible.
+a.binaries = [b for b in a.binaries if not (
+    b[0].startswith('icuuc') or b[0].startswith('icudt')
+)]
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
