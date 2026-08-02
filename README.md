@@ -24,7 +24,7 @@ A real-time tactical display for War Thunder, built with PyQt6. Reads battlefiel
 
 ### Download
 
-Grab the latest **`WTDashboard_Setup_v1_2_0.exe`** from [Releases](../../releases) — it installs everything into `%LOCALAPPDATA%\WTDashboard` with Start Menu and Desktop shortcuts.
+Grab the latest **`WTDashboard_Setup_v1_2_1.exe`** from [Releases](../../releases) — it installs everything into `%LOCALAPPDATA%\WTDashboard` with Start Menu and Desktop shortcuts.
 
 > **Note:** Only **Windows** installers are provided. macOS / Linux users can run from source, or build an installer using the instructions below.
 
@@ -83,7 +83,7 @@ pyinstaller --noconfirm WTDashboard.spec
 makensis setup.nsi
 ```
 
-Output: `dist/WTDashboard_Setup_v1_2_0.exe` (auto-detects previous install location)
+Output: `dist/WTDashboard_Setup_v1_2_1.exe` (auto-detects previous install location)
 
 ### macOS
 
@@ -94,7 +94,7 @@ pip install -r requirements.txt
 bash build_macos.sh
 ```
 
-Output: `dist/WTDashboard_Setup_v1_2_0.pkg` (installs to /Applications, auto-upgrades)
+Output: `dist/WTDashboard_Setup_v1_2_1.pkg` (installs to /Applications, auto-upgrades)
 
 ### Linux
 
@@ -105,7 +105,7 @@ pip install -r requirements.txt
 bash build_linux.sh
 ```
 
-Output: `dist/WTDashboard_Setup_v1_2_0.deb` (auto-upgrades previous version)
+Output: `dist/WTDashboard_Setup_v1_2_1.deb` (auto-upgrades previous version)
 
 ## License
 

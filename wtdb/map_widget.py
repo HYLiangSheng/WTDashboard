@@ -20,6 +20,16 @@ from .i18n import _
 
 ICON_SIZE = 16
 ICON_SIZE_PLAYER = 12
+# 未知/地面设施类型回退小正方形的缩放比例
+UNKNOWN_ICON_SCALE = 0.4
+# 跑道基础长宽比（长度 / 宽度）
+RUNWAY_ASPECT_RATIO = 10.0
+# 跑道整体等比放大倍数（150%）
+RUNWAY_SCALE = 1.5
+# 跑道最低显示宽度：等比放大后仍不足时继续整体放大到该宽度
+RUNWAY_MIN_WIDTH = 2.0
+# 无区域坐标的机场类设施（直升机场等）兜底跑道长度
+AIRFIELD_FALLBACK_LENGTH = 28
 
 # API 图标名 → Wiki PNG 文件名
 _ICON_FILE_MAP = {
@@ -99,8 +109,8 @@ def _draw_icon_shape(p: QPainter, icon: str, x: float, y: float, size: int,
             pp.end()
             p.drawPixmap(QPointF(x - result.width() / 2, y - result.height() / 2), result)
             return
-    # 未知类型 → 小正方形
-    s = size * 0.55
+    # 未知类型/地面设施 → 小正方形（缩小显示）
+    s = size * UNKNOWN_ICON_SCALE
     p.setPen(Qt.PenStyle.NoPen)
     p.setBrush(QColor(r, g, b, alpha))
     p.drawRect(QRectF(x - s / 2, y - s / 2, s, s))
@@ -108,26 +118,138 @@ def _draw_icon_shape(p: QPainter, icon: str, x: float, y: float, size: int,
 
 def _facility_icon(obj) -> str:
     """根据设施类型返回对应的图标键（也用于筛选）。"""
-    name = obj.icon.lower() if obj.icon else ""
-    if obj.sx != 0 or obj.ex != 0:
+    name = (obj.icon or "").lower()
+    type_name = (obj.obj_type or "").lower()
+    bg = (obj.icon_bg or "").lower()
+    # 航母在 8111 端口以机场形式返回，无独立标签，统一按机场跑道绘制
+    if is_carrier(obj):
         return "__airfield__"
-    if "bomb" in name:
+    if _is_airfield_like(obj):
+        return "__airfield__"
+    # 出生点/重生点优先于 zone 判断，避免 respawn_zone 之类被当成战区
+    if ("respawn" in name or "spawn" in name
+            or "respawn" in type_name or "spawn" in type_name
+            or "respawn" in bg or "spawn" in bg):
+        return "__facility__"
+    if ("bombing" in name or "bombing" in type_name
+            or "bombing" in bg
+            or "defend" in name or "defend" in type_name
+            or "defend" in bg):
         return "__bp__"
-    if "capture" in name or "zone" in name:
+    if "capture" in name or "capture" in type_name or "capture" in bg:
         return "__cp__"
     return "__facility__"
 
 
-_FACILITY_ICONS = {"airfield", "bombingzone", "bombing_point", "capturezone",
-                  "capturepoint", "helipad", "respawn_base", "air_spawn"}
+_FACILITY_ICONS = {
+    "airfield", "helipad",
+    "bombingzone", "bombing_point",
+    "capturezone", "capturepoint", "capture_zone",
+    "respawn_base", "respawn_base_tank", "respawn_base_bomber",
+    "respawn_base_fighter", "air_spawn", "defending_point",
+}
 
-def _is_facility(obj) -> bool:
+_AIRFIELD_ICON_NAMES = {"airfield", "helipad"}
+
+def is_facility_icon(icon: str) -> bool:
+    """判断图标名是否属于静态设施（机场、出生点、战区等）。"""
+    name = (icon or "").lower()
+    return (name in _FACILITY_ICONS
+            or "respawn" in name or "spawn" in name
+            or "airfield" in name or "helipad" in name
+            or "bombing" in name or "capture" in name
+            or "defend" in name or "carrier" in name)
+
+def is_carrier(obj) -> bool:
+    """航母：带有跑道属性的设施，按跑道绘制并由航母筛选控制。"""
+    name = (obj.icon or "").lower()
+    type_name = (obj.obj_type or "").lower()
+    bg = (obj.icon_bg or "").lower()
+    return "carrier" in name or "carrier" in type_name or "carrier" in bg
+
+def is_spawn_point(obj) -> bool:
+    """出生点/重生点：整体忽略，不绘制、不追踪、不生成标签。"""
+    if is_carrier(obj):
+        return False
+    name = (obj.icon or "").lower()
+    type_name = (obj.obj_type or "").lower()
+    bg = (obj.icon_bg or "").lower()
+    return ("respawn" in name or "spawn" in name
+            or "respawn" in type_name or "spawn" in type_name
+            or "respawn" in bg or "spawn" in bg)
+
+def _has_area(obj) -> bool:
+    """判断对象是否带实际区域坐标（sx/sy/ex/ey）。"""
+    return any(v != 0 for v in (obj.sx, obj.sy, obj.ex, obj.ey))
+
+def _is_airfield_like(obj) -> bool:
+    """判断是否为机场类对象（type 为机场或图标匹配），区域坐标不参与判定。"""
+    if (obj.obj_type or "").lower() in ("airfield", "helipad"):
+        return True
+    return (obj.icon or "").lower() in _AIRFIELD_ICON_NAMES
+
+def _is_facility_type(obj) -> bool:
+    """判断 type 字段是否属于静态设施（轰炸区、出生点、据点等）。"""
+    t = (obj.obj_type or "").lower()
+    bg = (obj.icon_bg or "").lower()
+    return (any(k in t for k in ("airfield", "helipad", "bombing", "capture",
+                                 "defend", "respawn", "spawn", "carrier"))
+            or any(k in bg for k in ("airfield", "helipad", "bombing", "capture",
+                                     "defend", "respawn", "spawn", "carrier")))
+
+
+def is_facility(obj) -> bool:
     """判断是否为静态设施（机场、战区等），避免误识别无关对象。"""
-    # 有区域坐标 → 机场
-    if obj.sx != 0 or obj.ex != 0:
+    # 机场类对象
+    if _is_airfield_like(obj) or _is_facility_type(obj):
+        return True
+    # 有区域坐标的静态区域（出生点、战区等）不能当载具处理
+    if _has_area(obj):
         return True
     # 已知设施图标名
-    return obj.icon.lower() in _FACILITY_ICONS
+    return is_facility_icon(obj.icon)
+
+
+def _draw_airfield_strip(p: QPainter, x1: float, y1: float,
+                         x2: float, y2: float,
+                         r: int, g: int, b: int, alpha: int = 255):
+    """沿跑道两端点绘制跑道条：长度和宽度同时按 150% 等比放大，比例不变。"""
+    dx = x2 - x1
+    dy = y2 - y1
+    length = math.hypot(dx, dy)
+    if length <= 0:
+        base_width = AIRFIELD_FALLBACK_LENGTH / RUNWAY_ASPECT_RATIO
+        scale = max(RUNWAY_SCALE, RUNWAY_MIN_WIDTH / base_width)
+        fallback_len = AIRFIELD_FALLBACK_LENGTH * scale
+        fallback_w = base_width * scale
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor(r, g, b, alpha))
+        p.drawRect(QRectF(x1 - fallback_len / 2,
+                          y1 - fallback_w / 2, fallback_len, fallback_w))
+        return
+
+    ux, uy = dx / length, dy / length
+    # 基础宽度按固定长宽比得出；整体等比放大，宽度不足 2px 时继续放大
+    base_width = length / RUNWAY_ASPECT_RATIO
+    scale = max(RUNWAY_SCALE, RUNWAY_MIN_WIDTH / base_width)
+    ext = length * (scale - 1) / 2
+    x1 -= ux * ext
+    y1 -= uy * ext
+    x2 += ux * ext
+    y2 += uy * ext
+
+    # 垂直方向单位向量，把跑道中心线扩展成固定宽度的多边形
+    nx, ny = -uy, ux
+    hw = (base_width * scale) / 2
+    poly = QPolygonF([
+        QPointF(x1 + nx * hw, y1 + ny * hw),
+        QPointF(x2 + nx * hw, y2 + ny * hw),
+        QPointF(x2 - nx * hw, y2 - ny * hw),
+        QPointF(x1 - nx * hw, y1 - ny * hw),
+    ])
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setBrush(QColor(r, g, b, alpha))
+    p.drawPolygon(poly)
 
 
 class MapWidget(QWidget):
@@ -257,9 +379,18 @@ class MapWidget(QWidget):
             if obj.is_player:
                 player = obj
                 continue
+            # 出生点/重生点直接忽略，不显示
+            if is_spawn_point(obj):
+                continue
             # 设施（机场、战区等：非载具类型 或 特定图标）
-            if _is_facility(obj):
-                if obj.color_rgb[0] > 200:
+            if is_facility(obj):
+                r, g, b = obj.color_rgb
+                if b > 200 and r < 100:
+                    facilities_friendly.append(obj)
+                elif g > 200:
+                    # 绿色（小队）也归入友方设施
+                    facilities_friendly.append(obj)
+                elif r > 200:
                     facilities_enemy.append(obj)
                 else:
                     facilities_friendly.append(obj)
@@ -348,33 +479,25 @@ class MapWidget(QWidget):
             ficon = _facility_icon(obj)
             if self._is_hidden(faction, ficon):
                 continue
-            if obj.sx != 0 or obj.ex != 0:
-                # 机场矩形跑道（有区域坐标）
-                x1, y1 = ox + obj.sx * mw, oy + obj.sy * mh
-                x2, y2 = ox + obj.ex * mw, oy + obj.ey * mh
-                if x1 > x2: x1, x2 = x2, x1
-                if y1 > y2: y1, y2 = y2, y1
-                rw, rh = x2 - x1, y2 - y1
-
-                if rw >= rh:
-                    extend = rw * 0.25
-                    x1 -= extend; x2 += extend
+            if ficon == "__airfield__":
+                if _has_area(obj):
+                    # 机场/航母跑道：sx/sy-ex/ey 是跑道两端点，绘制统一宽度跑道条
+                    x1, y1 = ox + obj.sx * mw, oy + obj.sy * mh
+                    x2, y2 = ox + obj.ex * mw, oy + obj.ey * mh
+                    _draw_airfield_strip(p, x1, y1, x2, y2, r, g, b)
                 else:
-                    extend = rh * 0.25
-                    y1 -= extend; y2 += extend
-
-                # 实心矩形
-                p.setPen(Qt.PenStyle.NoPen)
-                p.setBrush(QColor(r, g, b, 255))
-                p.drawRect(QRectF(QPointF(x1, y1), QPointF(x2, y2)))
-            elif ficon == "__airfield__":
-                # 机场无区域坐标：以 x/y 为中心画实心矩形
-                cx = ox + obj.x * mw
-                cy = oy + obj.y * mh
-                s = 14
-                p.setPen(Qt.PenStyle.NoPen)
-                p.setBrush(QColor(r, g, b, 255))
-                p.drawRect(QRectF(cx - s, cy - s * 0.4, s * 2, s * 0.8))
+                    # 机场/航母无区域坐标：以 x/y 为中心画默认宽度跑道条
+                    cx = ox + obj.x * mw
+                    cy = oy + obj.y * mh
+                    base_width = AIRFIELD_FALLBACK_LENGTH / RUNWAY_ASPECT_RATIO
+                    scale = max(RUNWAY_SCALE, RUNWAY_MIN_WIDTH / base_width)
+                    fallback_len = AIRFIELD_FALLBACK_LENGTH * scale
+                    fallback_w = base_width * scale
+                    p.setPen(Qt.PenStyle.NoPen)
+                    p.setBrush(QColor(r, g, b, 255))
+                    p.drawRect(QRectF(cx - fallback_len / 2,
+                                      cy - fallback_w / 2,
+                                      fallback_len, fallback_w))
             else:
                 # 战区、占领区：BP/CP 图标
                 cx = ox + obj.x * mw

@@ -15,10 +15,10 @@ from PyQt6.QtWidgets import (
 from .version import VERSION
 
 from .api_client import FetchWorker, GameState
-from .map_widget import MapWidget
+from .map_widget import MapWidget, is_facility_icon
 from .hud_feed import HudFeed
 from .unit_tracker import UnitTracker
-from .sitrep_panel import SitrepPanel
+from .sitrep_panel import SitrepPanel, ABBR
 from .styles import DARK_THEME_QSS
 from .i18n import _, set_locale, get_locale, available_locales, locale_changed
 from .i18n import _LOCALE_SELF_NAME
@@ -416,6 +416,7 @@ class DashboardWindow(QMainWindow):
             ("filter.air.atk_heli", "AttackHelicopter"), ("filter.air.heli", "UtilityHelicopter"),
             ("filter.ground.light_tank", "LightTank"), ("filter.ground.med_tank", "MediumTank"), ("filter.ground.heavy_tank", "HeavyTank"),
             ("filter.ground.td", "TankDestroyer"), ("filter.ground.spaa", "SPAA"), ("filter.ground.sam", "SAM"),
+            ("filter.ground.facility", "__facility__"),
             ("filter.ground.airfield", "__airfield__"),
             ("filter.ground.bombing_zone", "__bp__"),
             ("filter.ground.capture_point", "__cp__"),
@@ -426,7 +427,7 @@ class DashboardWindow(QMainWindow):
         ]
         air_keys = ["Fighter", "Assault", "Bomber", "AttackHelicopter", "UtilityHelicopter"]
         land_keys = ["LightTank", "MediumTank", "HeavyTank", "TankDestroyer", "SPAA", "SAM",
-                     "__airfield__", "__bp__", "__cp__"]
+                     "__facility__", "__airfield__", "__bp__", "__cp__"]
         sea_keys = ["Destroyer", "Frigate", "LightCruiser", "HeavyCruiser", "Battlecruiser",
                     "BattleShip", "Submarine", "Ship", "Boat"]
 
@@ -508,19 +509,12 @@ class DashboardWindow(QMainWindow):
         pass
 
     def _build_map_labels(self) -> list:
-        abbr = {
-            "Fighter":"F","Assault":"A","Bomber":"B",
-            "AttackHelicopter":"AH","UtilityHelicopter":"UH",
-            "LightTank":"LT","MediumTank":"MT","HeavyTank":"HT",
-            "TankDestroyer":"TD",
-            "SPAA":"SP","SAM":"SA",
-            "Destroyer":"DD",
-            "LightCruiser":"CL","HeavyCruiser":"CA",
-            "Battlecruiser":"BC","BattleShip":"BB",
-            "Frigate":"FF",
-            "Submarine":"SB","Ship":"SH","Boat":"BT",
+        abbr = dict(ABBR)
+        abbr.update({
+            "AttackHelicopter":"AH",
+            "UtilityHelicopter":"UH",
             "__facility__":"G",
-        }
+        })
         hidden = self._map_widget._hidden
 
         def faction_of(u) -> str:
@@ -538,6 +532,8 @@ class DashboardWindow(QMainWindow):
         # 敌军（先活跃后消失，序号连续）
         counters_e: dict[str, int] = {}
         for u in self._tracker.active_enemies:
+            if is_facility_icon(u.icon) or u.icon not in self._known_icons:
+                continue
             if ("enemy", u.icon) not in hidden and not (
                 u.icon not in abbr and ("enemy", "__facility__") in hidden):
                 code = abbr.get(u.icon, "G")
@@ -547,6 +543,8 @@ class DashboardWindow(QMainWindow):
                 c = u.color_rgb
                 labels.append((u.last_x, u.last_y, f"{code}{n:02d}{spd}", (*c, 220)))
         for u in self._tracker.lost_enemies:
+            if is_facility_icon(u.icon) or u.icon not in self._known_icons:
+                continue
             if ("enemy", u.icon) not in hidden and not (
                 u.icon not in abbr and ("enemy", "__facility__") in hidden):
                 code = abbr.get(u.icon, "G")
@@ -559,6 +557,8 @@ class DashboardWindow(QMainWindow):
         # 友军（含小队，按单位实际阵营匹配筛选）
         counters_f: dict[str, int] = {}
         for u in self._tracker.active_friendlies:
+            if is_facility_icon(u.icon) or u.icon not in self._known_icons:
+                continue
             f = faction_of(u)
             check_f = "friendly" if f == "squad" else f
             if (check_f, u.icon) in hidden or (
@@ -571,6 +571,8 @@ class DashboardWindow(QMainWindow):
             c = u.color_rgb
             labels.append((u.last_x, u.last_y, f"{code}{n:02d}{spd}", (*c, 220)))
         for u in self._tracker.lost_friendlies:
+            if is_facility_icon(u.icon) or u.icon not in self._known_icons:
+                continue
             f = faction_of(u)
             check_f = "friendly" if f == "squad" else f
             if (check_f, u.icon) in hidden or (

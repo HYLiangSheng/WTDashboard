@@ -108,12 +108,20 @@ class UnitTracker:
         self._update_map_scale(map_info)
 
         # 分类当前帧的敌方/友方单位（排除玩家、机场、据点等）
+        # 局部导入避免与 map_widget 形成循环依赖
+        from .map_widget import is_facility, is_spawn_point
         current_enemies: list[MapObject] = []
         current_friendlies: list[MapObject] = []
         for obj in objects:
             if not obj.is_aircraft and not obj.is_ground:
                 continue
             if obj.is_player:
+                continue
+            # 出生点/重生点整体忽略，不追踪
+            if is_spawn_point(obj):
+                continue
+            # 地面设施只画图标，不进入追踪/标签/速度统计
+            if is_facility(obj):
                 continue
             if obj.color_rgb[0] > 200 and obj.color_rgb[2] < 100:
                 current_enemies.append(obj)
