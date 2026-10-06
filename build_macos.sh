@@ -2,13 +2,13 @@
 # =============================================================
 # WTDashboard macOS 构建脚本
 # 用法: bash build_macos.sh
-# 产物: dist/WTDashboard_Setup_v1_0_1.dmg
+# 产物: dist/WTDashboard_Setup_v1_2_2.pkg
 # =============================================================
 set -e
 
 APP_NAME="WTDashboard"
-VERSION="1.2.1"
-PKG_NAME="WTDashboard_Setup_v1_1_0"
+VERSION="1.2.2"
+PKG_NAME="WTDashboard_Setup_v1_2_2"
 
 echo "=== 清理旧构建 ==="
 rm -rf build dist *.spec.bak

@@ -263,6 +263,9 @@ class MapWidget(QWidget):
         self._objects: list[MapObject] = []
         self._player: MapObject | None = None
         self._cache_dirty: bool = True
+        self._img_stamp = -1         # 已应用的地图图片版本（CRC32）
+        self._bad_img_stamp = -1     # 解析失败的地图版本（不再重复解析同一数据）
+        self._img_failed_cb = None   # 图片解析失败回调（通知 worker 重下）
         self._lost_enemies: list[TrackedUnit] = []
         self._lost_friendlies: list[TrackedUnit] = []
         self._hidden: set[tuple[str, str]] = set()
@@ -275,6 +278,10 @@ class MapWidget(QWidget):
 
     def set_labels(self, labels: list):
         self._labels = labels
+
+    def set_image_failed_callback(self, cb):
+        """地图图片数据解析失败时的回调（通常连接到 worker 请求重新下载）。"""
+        self._img_failed_cb = cb
 
     def toggle_filter(self, faction: str, icon: str):
         key = (faction, icon)
@@ -295,13 +302,22 @@ class MapWidget(QWidget):
         return False
 
     def update_state(self, state: GameState):
-        """更新地图数据。"""
-        if state.map_image_bytes:
+        """更新地图数据（图片按 stamp 去重，容忍每帧重复携带同一图片）。"""
+        stamp = state.map_image_stamp
+        if (state.map_image_bytes
+                and stamp != self._img_stamp
+                and stamp != self._bad_img_stamp):
             pix = QPixmap()
             pix.loadFromData(state.map_image_bytes)
             if not pix.isNull():
                 self._map_pixmap = pix
                 self._cache_dirty = True
+                self._img_stamp = stamp
+            else:
+                # 损坏图片：记录该版本避免重复解析，并通知 worker 重新下载
+                self._bad_img_stamp = stamp
+                if self._img_failed_cb:
+                    self._img_failed_cb(stamp)
 
         self._objects = state.map_objects
         self._player = state.player_object()
@@ -312,6 +328,8 @@ class MapWidget(QWidget):
         self._player = None
         self._lost_enemies.clear()
         self._lost_friendlies.clear()
+        self._img_stamp = -1
+        self._bad_img_stamp = -1
         self.update()
 
     def set_lost_enemies(self, units: list):

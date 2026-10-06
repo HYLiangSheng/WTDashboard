@@ -2,13 +2,13 @@
 # =============================================================
 # WTDashboard Linux 构建脚本
 # 用法: bash build_linux.sh
-# 产物: dist/WTDashboard_Setup_v1_1_0.deb
+# 产物: dist/WTDashboard_Setup_v1_2_2.deb
 # =============================================================
 set -e
 
 APP_NAME="WTDashboard"
-VERSION="1.2.1"
-DEB_NAME="WTDashboard_Setup_v1_1_0"
+VERSION="1.2.2"
+DEB_NAME="WTDashboard_Setup_v1_2_2"
 
 echo "=== 清理旧构建 ==="
 rm -rf build dist *.spec.bak

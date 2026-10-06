@@ -821,6 +821,8 @@ class DashboardWindow(QMainWindow):
         self._worker.data_ready.connect(self._on_data_ready)
         self._worker.connection_error.connect(self._on_connection_error)
         self._worker.connection_restored.connect(self._on_connection_restored)
+        # 地图图片损坏时通知 worker 重新下载（失败重试）
+        self._map_widget.set_image_failed_callback(self._worker.retry_map_download)
 
         self._timer.start()
 
@@ -840,6 +842,7 @@ class DashboardWindow(QMainWindow):
                 self._worker.stop()
 
         self._worker = None
+        self._map_widget.set_image_failed_callback(None)
         self._map_widget.clear()
         self._frame_count = 0
 

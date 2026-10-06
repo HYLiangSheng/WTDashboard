@@ -15,6 +15,7 @@ import base64
 import json
 import time
 import threading
+import zlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Any
@@ -102,6 +103,8 @@ class GameState:
 
     # /map.img (bytes)
     map_image_bytes: bytes = b""
+    # 地图图片版本号（数据 CRC32，用于 UI 端去重，避免重复解析同一图片）
+    map_image_stamp: int = 0
 
     # /mission.json
     mission_raw: dict[str, Any] = field(default_factory=dict)
@@ -232,6 +235,8 @@ class FetchWorker(QObject):
 
     BASE_URL = "http://localhost:8111"
     TIMEOUT = 1.0
+    MAP_RETRY_COOLDOWN = 2.0       # 地图图片损坏后的首次重试间隔（秒）
+    MAP_RETRY_MAX_INTERVAL = 60.0  # 退避重试间隔上限（秒）
 
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
@@ -242,7 +247,23 @@ class FetchWorker(QObject):
         self._running = False
         self._last_evt = 0
         self._last_dmg = 0
-        self._map_img_fetched = False
+        # 地图图片状态机：
+        #   _map_needs_download   — 需要（重新）下载地图（初始/换图/重连/图片损坏时置位）
+        #   _last_valid           — 上一轮 /state.valid，用于门控下载（机库/断连时不下）
+        #   _map_img_data         — 最近一次下载成功的地图数据（每轮随 GameState 携带）
+        #   _map_img_stamp        — 图片数据 CRC32（UI 端去重）
+        #   _map_fp               — map_info 指纹（换图兜底检测）
+        #   _map_retry_not_before — 损坏图重试节流时间戳
+        #   _bad_map_stamp        — UI 报告的损坏图片 CRC（重下仍相同则退避重试）
+        #   _bad_retry_count      — 连续重下得到同一坏图的次数（指数退避）
+        self._map_needs_download = True
+        self._last_valid = True
+        self._map_img_data: bytes | None = None
+        self._map_img_stamp = 0
+        self._map_fp: tuple | None = None
+        self._map_retry_not_before = 0.0
+        self._bad_map_stamp: int | None = None
+        self._bad_retry_count = 0
         self._error_emitted = False
 
         self._running = True
@@ -260,7 +281,20 @@ class FetchWorker(QObject):
             self.data_ready.emit(state)
 
     def reset_map_image(self) -> None:
-        self._map_img_fetched = False
+        """请求重新下载地图（连接切换/断连时由主线程调用）。"""
+        self._map_needs_download = True
+        self._map_retry_not_before = 0.0
+
+    def retry_map_download(self, bad_stamp: int) -> None:
+        """UI 端发现地图图片损坏时调用（主线程）。
+
+        bad_stamp 为损坏图片的 CRC32。若重下得到的数据仍相同（服务器
+        尚未刷新），worker 将按指数退避持续重试，直到数据变化为止。
+        """
+        self._bad_map_stamp = bad_stamp
+        self._bad_retry_count = 0
+        self._map_needs_download = True
+        self._map_retry_not_before = time.time() + self.MAP_RETRY_COOLDOWN
 
     def stop(self):
         self._running = False
@@ -284,6 +318,11 @@ class FetchWorker(QObject):
         """并行拉取所有端点（state + map + indicators + mission + hudmsg）。"""
         state = GameState(timestamp=time.time())
 
+        # 仅在“需要下载”且上一轮处于战斗中时拉取地图图片：
+        # 机库/加载界面（valid=false）期间不再反复下载随后被丢弃的图片（省流），
+        # 恢复后再补下；损坏重试受最小间隔节流。
+        need_map = (self._map_needs_download and self._last_valid
+                    and time.time() >= self._map_retry_not_before)
         tasks = {
             "/state": "state",
             "/map_obj.json": "map_objects",
@@ -292,7 +331,7 @@ class FetchWorker(QObject):
             "/mission.json": "mission",
             f"/hudmsg?lastEvt={self._last_evt}&lastDmg={self._last_dmg}": "hudmsg",
         }
-        if not self._map_img_fetched:
+        if need_map:
             tasks["/map.img"] = "map_image"
 
         results = {}
@@ -311,8 +350,10 @@ class FetchWorker(QObject):
 
         state.state_raw = results.get("state") or {}
         state.valid = state.state_raw.get("valid", False)
+        self._last_valid = state.valid
         if not state.valid:
-            self._map_img_fetched = False  # 断连时重置，下次重连重新下载地图
+            # 不在战斗中（机库/加载/断连）：标记恢复后需要重新下载地图
+            self._map_needs_download = True
             if not self._error_emitted:
                 self.connection_error.emit("status.waiting")
                 self._error_emitted = True
@@ -320,10 +361,19 @@ class FetchWorker(QObject):
         if self._error_emitted:
             self.connection_restored.emit()
             self._error_emitted = False
-            self._map_img_fetched = False  # 重连后强制重新下载地图
+            self._map_needs_download = True  # 重连后强制重新下载地图
 
         state.indicators_raw = results.get("indicators") or {}
         state.map_info = results.get("map_info") or {}
+
+        # 换图兜底检测：map_info 指纹变化时重新下载地图，
+        # 防止 valid=false 窗口因轮询卡顿被整体跳过而漏掉换图
+        fp = self._map_fingerprint(state.map_info)
+        if fp is not None:
+            if self._map_fp is not None and fp != self._map_fp:
+                self._map_needs_download = True
+            self._map_fp = fp
+
         raw = results.get("map_objects") or []
         if isinstance(raw, list):
             state.map_objects = [MapObject.from_dict(d) for d in raw]
@@ -338,11 +388,52 @@ class FetchWorker(QObject):
                 pass
 
         img = results.get("map_image")
-        if img and not self._map_img_fetched:
-            state.map_image_bytes = img
-            self._map_img_fetched = True
+        if img and self._map_needs_download:
+            # 下载成功：缓存数据并撤销下载标记（此后每轮随帧携带给 UI）
+            crc = zlib.crc32(img)
+            self._map_img_data = img
+            self._map_img_stamp = crc
+            self._map_needs_download = False
+            if crc == self._bad_map_stamp:
+                # 服务器仍返回同一份坏图：指数退避后继续重试，避免无限
+                # 快速下载；直到拿到不同数据（由 UI 验证好坏）
+                self._bad_retry_count += 1
+                backoff = min(self.MAP_RETRY_COOLDOWN * (2 ** self._bad_retry_count),
+                              self.MAP_RETRY_MAX_INTERVAL)
+                self._map_needs_download = True
+                self._map_retry_not_before = time.time() + backoff
+            else:
+                # 数据已变化，清除坏图标记（交给 UI 验证）
+                self._bad_map_stamp = None
+                self._bad_retry_count = 0
+
+        # 每轮都携带最近一次有效地图（UI 按 stamp 去重加载）。
+        # 修复：图片不再只出现在单轮缓存中，避免 10Hz tick 恰好跳过该帧时
+        # “换了图但底图不更新、且因标记置位而不再重试”的问题。
+        if self._map_img_data is not None:
+            state.map_image_bytes = self._map_img_data
+            state.map_image_stamp = self._map_img_stamp
 
         return state
+
+    @staticmethod
+    def _map_fingerprint(info: dict) -> tuple | None:
+        """提取 map_info 中的关键字段指纹，用于检测换图。
+
+        字段缺失或全空时返回 None（不参与比较，避免误报）。
+        注意：仅覆盖网格/边界不同的地图；同尺寸网格的两张不同地图
+        依赖 valid=false 窗口触发重下，此函数为其兜底。
+        """
+        if not info:
+            return None
+        try:
+            fp = (tuple(info.get("grid_zero") or []),
+                  tuple(info.get("grid_steps") or []),
+                  tuple(info.get("map_max") or []),
+                  tuple(info.get("map_min") or []))
+        except TypeError:
+            return None
+        return fp if any(fp) else None
 
     # ------------------------------------------------------------------
     # HTTP 请求
